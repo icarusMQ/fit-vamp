@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>FitTrack</title>
+
+<link rel="manifest" href="manifest.json" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="FitTrack" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="icon" href="icons/favicon.png" />
+<meta name="theme-color" content="#0a0612" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="bg-layer"></div>
+<div class="scanlines"></div>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="hdr-btn hdr-back hidden" id="hdr-back" title="Back">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <div>
+      <h1 id="topbar-title">FITTRACK</h1>
+      <span id="topbar-date" class="topbar-date"></span>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button class="hdr-btn" id="hdr-sound" title="Sound on/off">
+      <svg class="ic ic-sound-on" viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6l-5 4H4zM16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>
+      <svg class="ic ic-sound-off" viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6l-5 4H4zM16 9l6 6M22 9l-6 6"/></svg>
+    </button>
+    <button class="hdr-btn" id="hdr-trophy" title="Achievements">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M7 4h10v4a5 5 0 0 1-10 0zM5 5h2v3a3 3 0 0 1-2-3zm14 0h-2v3a3 3 0 0 0 2-3zM10 14h4v3h-4zM8 19h8v2H8z"/></svg>
+    </button>
+    <button class="hdr-btn" id="hdr-library" title="Plans, exercises &amp; stats">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 13h6v6H4zM14 13h6v6h-6z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="app">
+
+  <!-- ============ HOME ============ -->
+  <section id="tab-home" class="tab-panel active">
+
+    <div class="mascot-dock">
+      <div class="mascot-wrap" data-mascot></div>
+      <div class="speech-bubble"><p id="mascot-line">...</p></div>
+    </div>
+
+    <div class="hud-row">
+      <div class="hud-chip">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M12 3c0 4-5 5-5 9a5 5 0 0 0 10 0c0-2-1-3-2-4 0 2-1 3-2 3 1-3-1-6-1-8z"/></svg>
+        <span id="hud-streak">0</span><span class="hud-label">days</span>
+      </div>
+      <div class="hud-chip hud-level"><span id="hud-level">Lv.1</span></div>
+      <div class="hud-chip hud-ach" id="hud-ach-btn">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M7 4h10v4a5 5 0 0 1-10 0zM10 14h4v3h-4zM8 19h8v2H8z"/></svg>
+        <span id="hud-ach-count">0</span>
+      </div>
+    </div>
+    <div class="xp-bar-track"><div id="xp-bar-fill" class="xp-bar-fill" style="width:0%"></div></div>
+
+    <div id="hero-card" class="hero-card">
+      <div class="hero-card-label">TODAY</div>
+      <div id="hero-plan-name" class="hero-plan-name">No plan yet</div>
+      <div id="hero-splits" class="hero-splits"></div>
+      <button class="btn btn-secondary btn-full" id="hero-no-plan-btn">Create a Plan</button>
+      <button class="btn btn-ghost btn-full btn-sm" id="hero-switch-plan">Switch plan</button>
+    </div>
+
+    <!-- weight trend -->
+    <div class="trend-card" id="trend-card">
+      <div class="trend-head">
+        <span class="trend-label">WEIGHT</span>
+        <span class="trend-more">Details ›</span>
+      </div>
+      <div class="trend-body">
+        <div class="trend-numbers">
+          <div id="trend-current" class="trend-current">—</div>
+          <div id="trend-delta" class="trend-delta"></div>
+        </div>
+        <canvas id="trend-spark" class="trend-spark" height="52"></canvas>
+      </div>
+      <div id="trend-empty" class="trend-empty">No weigh-ins yet.</div>
+    </div>
+
+    <button class="btn btn-ghost btn-full" id="btn-log-weight">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 4a3 3 0 0 1 2.83 2H19a2 2 0 0 1 2 2l-2 11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L3 8a2 2 0 0 1 2-2h4.17A3 3 0 0 1 12 4zm0 2a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm0 4-3 5h6z"/></svg>
+      Log Weight
+    </button>
+
+    <div class="home-calendar">
+      <div class="calendar-nav">
+        <button class="btn btn-icon" id="cal-prev">‹</button>
+        <span id="cal-month-label" class="calendar-month-label"></span>
+        <button class="btn btn-icon" id="cal-next">›</button>
+      </div>
+      <div class="calendar-weekdays">
+        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+      </div>
+      <div id="calendar-grid" class="calendar-grid"></div>
+      <div class="calendar-legend">
+        <span class="legend-item"><i class="dot dot-exercise"></i> Trained</span>
+        <span class="legend-item"><i class="dot dot-weight"></i> Weighed</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LIBRARY hub ============ -->
+  <section id="tab-library" class="tab-panel">
+    <div class="section-heading"><h2>Library</h2></div>
+    <ul class="menu-list">
+      <li class="menu-item" data-goto="tab-plans">
+        <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5zM8 8h8M8 12h8M8 16h5"/></svg>
+        <div class="menu-text"><span>Plans</span><small id="lib-plans-meta"></small></div>
+        <span class="menu-chevron">›</span>
+      </li>
+      <li class="menu-item" data-goto="tab-exercises">
+        <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg>
+        <div class="menu-text"><span>Exercises</span><small id="lib-ex-meta"></small></div>
+        <span class="menu-chevron">›</span>
+      </li>
+      <li class="menu-item" data-goto="tab-weight">
+        <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M4 19h16M4 19l4-8 4 4 4-7 4 5"/></svg>
+        <div class="menu-text"><span>Weight &amp; Stats</span><small id="lib-weight-meta"></small></div>
+        <span class="menu-chevron">›</span>
+      </li>
+      <li class="menu-item" data-goto="tab-achievements">
+        <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M7 4h10v4a5 5 0 0 1-10 0zM5 5h2v3a3 3 0 0 1-2-3zm14 0h-2v3a3 3 0 0 0 2-3zM10 14h4v3h-4zM8 19h8v2H8z"/></svg>
+        <div class="menu-text"><span>Achievements</span><small id="lib-ach-meta"></small></div>
+        <span class="menu-chevron">›</span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ============ PLANS ============ -->
+  <section id="tab-plans" class="tab-panel">
+    <div class="section-heading">
+      <h2>Plans</h2>
+      <button class="btn btn-small btn-primary" id="btn-new-plan">+ New</button>
+    </div>
+    <ul id="plans-list" class="entry-list"><li class="empty-state">No plans yet.</li></ul>
+  </section>
+
+  <!-- ============ WEIGHT & STATS ============ -->
+  <section id="tab-weight" class="tab-panel">
+    <div class="section-heading">
+      <h2>Weight &amp; Stats</h2>
+      <button class="btn btn-small btn-primary" id="btn-log-weight-2">+ Add</button>
+    </div>
+
+    <div class="card">
+      <canvas id="weight-chart" height="170"></canvas>
+      <p id="weight-chart-empty" class="empty-state hidden">Log a couple of weigh-ins to see a trend.</p>
+    </div>
+
+    <h3 class="list-heading">Lifetime</h3>
+    <div class="stat-grid" id="stat-grid"></div>
+
+    <h3 class="list-heading">Weigh-in history</h3>
+    <ul id="weight-history-list" class="entry-list"><li class="empty-state">No weight logged yet.</li></ul>
+  </section>
+
+  <!-- ============ EXERCISES ============ -->
+  <section id="tab-exercises" class="tab-panel">
+    <div class="section-heading">
+      <h2>Exercises</h2>
+      <button class="btn btn-small btn-primary" id="btn-add-custom-exercise">+ Custom</button>
+    </div>
+    <input type="search" id="exercise-search" class="text-input" placeholder="Search…" />
+    <div id="exercise-filters" class="chip-row"></div>
+    <ul id="exercise-list" class="entry-list"></ul>
+  </section>
+
+  <!-- ============ ACHIEVEMENTS ============ -->
+  <section id="tab-achievements" class="tab-panel">
+    <div class="section-heading"><h2>Achievements</h2></div>
+    <div class="ach-progress">
+      <span id="ach-progress-text">0 / 0</span>
+      <div class="xp-bar-track"><div id="ach-progress-fill" class="xp-bar-fill" style="width:0%"></div></div>
+    </div>
+    <div id="achievements-list"></div>
+  </section>
+
+</main>
+
+<!-- ============================================================
+     SESSION PLAYER
+     ============================================================ -->
+<div id="session-screen" class="session-screen hidden">
+
+  <div class="session-topbar">
+    <button class="session-x" id="session-quit">✕</button>
+    <div class="session-crumb">
+      <div id="session-plan-crumb" class="session-plan-crumb"></div>
+      <div id="session-ex-crumb" class="session-ex-crumb"></div>
+    </div>
+    <button class="session-list-btn" id="session-overview-btn" title="Split overview">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </div>
+
+  <div id="session-progress-dots" class="session-dots"></div>
+
+  <div id="session-swipe" class="session-swipe">
+    <div class="session-card">
+
+      <div class="session-mascot-row">
+        <div class="mascot-wrap mascot-sm" data-mascot></div>
+        <div class="speech-bubble speech-sm"><p id="session-mascot-line">...</p></div>
+      </div>
+
+      <div class="set-badge">
+        <span class="set-badge-label">SET</span>
+        <span id="set-number" class="set-badge-num">1</span>
+        <span class="set-badge-of">of <span id="set-total">3</span></span>
+      </div>
+
+      <h2 id="session-exercise-name" class="session-ex-name">Exercise</h2>
+      <div id="session-target-line" class="session-target-line"></div>
+
+      <!-- STRENGTH inputs -->
+      <div id="strength-inputs">
+        <div class="big-inputs">
+          <div class="big-input-group">
+            <label class="big-label">REPS</label>
+            <div class="stepper">
+              <button class="step-btn" data-step="reps" data-delta="-1">−</button>
+              <input type="number" id="input-reps" class="big-input" inputmode="numeric" placeholder="0">
+              <button class="step-btn" data-step="reps" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="big-input-group">
+            <label class="big-label" id="weight-label">KG</label>
+            <div class="stepper">
+              <button class="step-btn" data-step="weight" data-delta="-2.5">−</button>
+              <input type="number" id="input-weight" class="big-input" inputmode="decimal" step="0.5" placeholder="0">
+              <button class="step-btn" data-step="weight" data-delta="2.5">+</button>
+            </div>
+          </div>
+        </div>
+        <button class="bw-toggle" id="bw-toggle">
+          <span class="bw-box"></span>
+          <span class="bw-text">Bodyweight <small>(kg field becomes added weight)</small></span>
+        </button>
+      </div>
+
+      <!-- CARDIO inputs -->
+      <div id="cardio-inputs" class="hidden">
+        <div class="big-inputs">
+          <div class="big-input-group">
+            <label class="big-label">TIME</label>
+            <div class="stepper stepper-time">
+              <button class="step-btn" data-step="dur" data-delta="-60">−</button>
+              <input type="text" id="input-duration" class="big-input" inputmode="numeric" placeholder="0:00">
+              <button class="step-btn" data-step="dur" data-delta="60">+</button>
+            </div>
+          </div>
+          <div class="big-input-group">
+            <label class="big-label">KM</label>
+            <div class="stepper">
+              <button class="step-btn" data-step="dist" data-delta="-0.5">−</button>
+              <input type="number" id="input-distance" class="big-input" inputmode="decimal" step="0.1" placeholder="0">
+              <button class="step-btn" data-step="dist" data-delta="0.5">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="stopwatch">
+          <div class="sw-display" id="sw-display">0:00</div>
+          <div class="sw-controls">
+            <button class="btn btn-secondary btn-sm" id="sw-toggle">Start</button>
+            <button class="btn btn-ghost btn-sm" id="sw-reset">Reset</button>
+            <button class="btn btn-ghost btn-sm" id="sw-use">Use time</button>
+          </div>
+          <div class="sw-pace" id="sw-pace"></div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-full btn-log-set" id="btn-log-set">LOG SET</button>
+
+      <div class="session-nav-row">
+        <button class="btn btn-ghost btn-sm" id="btn-prev-set">‹ Back</button>
+        <button class="btn btn-ghost btn-sm" id="btn-skip-set">Skip ›</button>
+      </div>
+
+      <div class="history-block">
+        <div class="history-head">
+          <span>LAST TIME</span>
+          <span id="history-pr" class="history-pr"></span>
+        </div>
+        <ul id="session-history" class="history-list"></ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- REST TIMER -->
+<div id="rest-overlay" class="rest-overlay hidden">
+  <div class="rest-inner">
+    <div class="mascot-wrap mascot-sm" data-mascot></div>
+    <p id="rest-mascot-line" class="rest-line">...</p>
+    <div class="rest-ring-wrap">
+      <svg class="rest-ring" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="52" class="ring-bg"/>
+        <circle cx="60" cy="60" r="52" class="ring-fg" id="rest-ring-fg"/>
+      </svg>
+      <div class="rest-time" id="rest-time">3:00</div>
+    </div>
+    <div class="rest-controls">
+      <button class="btn btn-secondary" id="rest-toggle">Pause</button>
+      <button class="btn btn-primary" id="rest-skip">Skip Rest</button>
+    </div>
+    <div class="rest-adjust">
+      <button class="btn btn-ghost btn-sm" id="rest-minus">−30s</button>
+      <button class="btn btn-ghost btn-sm" id="rest-plus">+30s</button>
+    </div>
+  </div>
+</div>
+
+<!-- SPLIT OVERVIEW -->
+<div id="modal-overview" class="modal-overlay hidden">
+  <div class="modal-sheet modal-sheet-tall">
+    <div class="modal-header">
+      <h3 id="overview-title">Split</h3>
+      <button class="modal-close" data-close="modal-overview">✕</button>
+    </div>
+    <div class="modal-body" id="overview-body"></div>
+  </div>
+</div>
+
+<!-- PLAN PICKER -->
+<div id="modal-plan-picker" class="modal-overlay hidden">
+  <div class="modal-sheet modal-sheet-tall">
+    <div class="modal-header">
+      <h3>Choose Plan</h3>
+      <button class="modal-close" data-close="modal-plan-picker">✕</button>
+    </div>
+    <div class="modal-body" id="plan-picker-body"></div>
+  </div>
+</div>
+
+<!-- LOG WEIGHT -->
+<div id="modal-weight" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <h3>Log Weight</h3>
+      <button class="modal-close" data-close="modal-weight">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="field-label">Date</label>
+      <input type="date" id="weight-date" class="text-input" />
+      <label class="field-label">Weight (kg)</label>
+      <input type="number" id="weight-value" class="text-input" step="0.1" inputmode="decimal" placeholder="e.g. 78.4" />
+      <button class="btn btn-primary btn-full" id="save-weight">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- PICK EXERCISE -->
+<div id="modal-pick-exercise" class="modal-overlay hidden">
+  <div class="modal-sheet modal-sheet-tall">
+    <div class="modal-header">
+      <h3>Choose Exercise</h3>
+      <button class="modal-close" data-close="modal-pick-exercise">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="search" id="pick-exercise-search" class="text-input" placeholder="Search…" />
+      <ul id="pick-exercise-list" class="entry-list"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- QUICK LOG -->
+<div id="modal-log-sets" class="modal-overlay hidden">
+  <div class="modal-sheet modal-sheet-tall">
+    <div class="modal-header">
+      <h3 id="log-sets-title">Log Sets</h3>
+      <button class="modal-close" data-close="modal-log-sets">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="recent-history-section" class="hidden">
+        <label class="field-label">Recent</label>
+        <ul id="recent-history-list" class="entry-list entry-list-compact"></ul>
+      </div>
+      <label class="field-label">Date</label>
+      <input type="date" id="sets-date" class="text-input" />
+      <div id="sets-rows"></div>
+      <button class="btn btn-secondary btn-full" id="add-set-row">+ Add Set</button>
+      <button class="btn btn-primary btn-full" id="save-sets">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- PLAN EDITOR -->
+<div id="modal-plan-editor" class="modal-overlay hidden">
+  <div class="modal-sheet modal-sheet-tall">
+    <div class="modal-header">
+      <h3 id="plan-editor-title">New Plan</h3>
+      <button class="modal-close" data-close="modal-plan-editor">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="field-label">Plan name</label>
+      <input type="text" id="plan-name" class="text-input" placeholder="e.g. Push Pull Legs" />
+      <div id="plan-splits-container"></div>
+      <button class="btn btn-secondary btn-full" id="add-split-btn">+ Add Split</button>
+      <button class="btn btn-primary btn-full" id="save-plan-btn">Save Plan</button>
+    </div>
+  </div>
+</div>
+
+<!-- PLAN DETAIL -->
+<div id="modal-plan-detail" class="modal-overlay hidden">
+  <div class="modal-sheet modal-sheet-tall">
+    <div class="modal-header">
+      <h3 id="plan-detail-title">Plan</h3>
+      <button class="modal-close" data-close="modal-plan-detail">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="plan-detail-splits"></div>
+      <button class="btn btn-secondary btn-full" id="plan-detail-edit">Edit Plan</button>
+      <button class="btn btn-danger btn-full" id="plan-detail-delete">Delete Plan</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM EXERCISE -->
+<div id="modal-custom-exercise" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <h3>Custom Exercise</h3>
+      <button class="modal-close" data-close="modal-custom-exercise">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="field-label">Name</label>
+      <input type="text" id="custom-ex-name" class="text-input" placeholder="e.g. Trap Bar Deadlift" />
+      <label class="field-label">Type</label>
+      <div class="modality-picker">
+        <button class="mod-opt mod-active" data-modality="strength">
+          <strong>Strength</strong><small>reps &amp; weight</small>
+        </button>
+        <button class="mod-opt" data-modality="cardio">
+          <strong>Cardio</strong><small>time &amp; distance</small>
+        </button>
+      </div>
+      <label class="field-label">Category</label>
+      <input type="text" id="custom-ex-category" class="text-input" placeholder="e.g. Back" />
+      <label class="field-label">Equipment</label>
+      <input type="text" id="custom-ex-equipment" class="text-input" placeholder="e.g. Barbell" />
+      <button class="btn btn-primary btn-full" id="save-custom-exercise">Add Exercise</button>
+    </div>
+  </div>
+</div>
+
+<!-- DAY DETAIL -->
+<div id="modal-day-detail" class="modal-overlay hidden">
+  <div class="modal-sheet modal-sheet-tall">
+    <div class="modal-header">
+      <h3 id="day-detail-title">Day</h3>
+      <button class="modal-close" data-close="modal-day-detail">✕</button>
+    </div>
+    <div class="modal-body" id="day-detail-body"></div>
+  </div>
+</div>
+
+<!-- EXERCISE HISTORY -->
+<div id="modal-exercise-history" class="modal-overlay hidden">
+  <div class="modal-sheet modal-sheet-tall">
+    <div class="modal-header">
+      <h3 id="exercise-history-title">History</h3>
+      <button class="modal-close" data-close="modal-exercise-history">✕</button>
+    </div>
+    <div class="modal-body" id="exercise-history-body"></div>
+  </div>
+</div>
+
+<!-- ACHIEVEMENT UNLOCK -->
+<div id="modal-achievement" class="modal-overlay hidden">
+  <div class="modal-sheet achievement-sheet">
+    <div class="ach-rays"></div>
+    <div class="achievement-burst" id="achievement-icon">🏆</div>
+    <div class="achievement-unlocked-label">ACHIEVEMENT UNLOCKED</div>
+    <div id="achievement-name" class="achievement-name">—</div>
+    <div id="achievement-desc" class="achievement-desc">—</div>
+    <button class="btn btn-primary btn-full" data-close="modal-achievement">Nice.</button>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="exercises-data.js"></script>
+<script src="achievements-data.js"></script>
+<script src="sounds.js"></script>
+<script src="mascot.js"></script>
+<script src="dialogue.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
