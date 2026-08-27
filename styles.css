@@ -21,6 +21,14 @@
 
 * { box-sizing: border-box; }
 
+/* Single source of truth for the "hidden" toggle used throughout the app.
+   !important because several elements (.lockout-screen, .modal-overlay,
+   etc.) set their own `display` unconditionally on the same class — without
+   this, cascade order (not the presence of the "hidden" class) would decide
+   visibility, which is exactly the bug that let .lockout-screen render at
+   full-screen on every load regardless of actual lockout state. */
+.hidden { display: none !important; }
+
 html, body {
   margin: 0; padding: 0;
   min-height: 100%;

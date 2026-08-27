@@ -3,7 +3,7 @@
 // data lives in IndexedDB on-device; the only network calls the app itself
 // makes are opt-in, to servers you configure — see app.js's header comment.
 
-const CACHE_NAME = "fittrack-lite-v12";
+const CACHE_NAME = "fittrack-lite-v13";
 const ASSETS = [
   "./",
   "./index.html",
