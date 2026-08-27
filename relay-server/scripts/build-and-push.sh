@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Builds both relay images and pushes them to one ECR repo, as two tags
-# ("relay" and "court-upload") rather than two separate repos. Run this
-# from your own machine (needs Docker + AWS CLI configured with push
-# permissions) — not on the EC2 instance, which only ever pulls.
+# Builds the relay, court-upload, and static-app images and pushes all
+# three to one ECR repo, as separate tags ("relay", "court-upload", "app")
+# rather than separate repos. Run this from your own machine (needs Docker
+# + AWS CLI configured with push permissions) — not on the EC2 instance,
+# which only ever pulls.
 #
 # Usage:
 #   ECR_REPO=123456789012.dkr.ecr.sa-east-1.amazonaws.com/icaro/fitvamp ./scripts/build-and-push.sh
@@ -26,7 +27,13 @@ docker push "$ECR_REPO:relay"
 docker build -f Dockerfile.court-upload -t "$ECR_REPO:court-upload" .
 docker push "$ECR_REPO:court-upload"
 
+# Dockerfile.app lives at the repo root (it packages index.html + the JS/CSS
+# files there), not in relay-server/ — build context is ".." accordingly.
+docker build -f ../Dockerfile.app -t "$ECR_REPO:app" ..
+docker push "$ECR_REPO:app"
+
 echo
 echo "Pushed:"
 echo "  $ECR_REPO:relay"
 echo "  $ECR_REPO:court-upload"
+echo "  $ECR_REPO:app"

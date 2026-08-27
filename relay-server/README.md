@@ -119,9 +119,28 @@ Either way (Option A or B), continue with:
    nginx works too if you already run it for something else; just proxy
    `Upgrade`/`Connection` headers through for the WebSocket handshake.
 
+   **Serving the app itself from the same box?** It's a separate Caddy site
+   block on a different (sub)domain, reverse-proxying to the `app` image's
+   container port (`8080` in `docker-compose.yml`) instead of the relay's:
+
+   ```
+   relay.yourdomain.com {
+     reverse_proxy localhost:8787
+   }
+
+   app.yourdomain.com {
+     reverse_proxy localhost:8080
+   }
+   ```
+
+   No domain yet? [sslip.io](https://sslip.io)/[nip.io](https://nip.io) give
+   free wildcard DNS with zero signup — `<label>.<your-ip-with-dots>.sslip.io`
+   resolves straight to that IP, and Caddy can issue a real Let's Encrypt
+   cert for it exactly like a real domain.
+
 4. Open the port in your security group: 443 (or 80+443 if Caddy is issuing
-   certs itself) inbound from anywhere; the app instance never needs 8787
-   exposed directly if the reverse proxy is on the same box.
+   certs itself) inbound from anywhere; the instance never needs 8787/8080
+   exposed directly since the reverse proxy is on the same box.
 
 5. Point the app at `wss://relay.yourdomain.com` from Friends → Sync.
 
