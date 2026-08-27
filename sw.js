@@ -1,18 +1,32 @@
 // FitTrack Lite service worker
-// Caches the app shell so it works fully offline once installed.
-// All user data lives in IndexedDB on-device — nothing is ever sent anywhere.
+// Caches the app shell so it works fully offline once installed. All user
+// data lives in IndexedDB on-device; the only network calls the app itself
+// makes are opt-in, to servers you configure — see app.js's header comment.
 
-const CACHE_NAME = "fittrack-lite-v5";
+const CACHE_NAME = "fittrack-lite-v13";
 const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./identity.js",
+  "./groups.js",
+  "./sync.js",
+  "./drops.js",
+  "./leaderboards.js",
+  "./moderation.js",
+  "./moderation-ui.js",
+  "./backup.js",
+  "./drive-backup.js",
+  "./backup-ui.js",
   "./exercises-data.js",
   "./achievements-data.js",
   "./mascot.js",
   "./dialogue.js",
   "./sounds.js",
+  "./vendor/qrcode.min.js",
+  "./vendor/qrcode-utf8.min.js",
+  "./vendor/jsQR.min.js",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

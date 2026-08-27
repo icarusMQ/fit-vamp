@@ -1,0 +1,37 @@
+# Run on the EC2 instance to pull all three images from ECR and keep them
+# running. Copy .env.example to .env and fill it in first. If you're not
+# using Red Flag Court video uploads, delete the court-upload service below
+# (it needs COURT_BUCKET and S3 permissions the relay itself doesn't).
+#
+# All three ship as tags in one ECR repo (ECR_REPO), not separate repos —
+# set ECR_REPO to whatever repo you created, e.g.
+# 123456789012.dkr.ecr.sa-east-1.amazonaws.com/icaro/fitvamp.
+services:
+  relay:
+    image: ${ECR_REPO}:relay
+    restart: always
+    ports:
+      - "8787:8787"
+    environment:
+      - PORT=8787
+
+  # The static PWA itself (index.html + the app's JS/CSS at the repo root)
+  # — a separate concern from the relay, fronted by its own host-Caddy site
+  # block on a different (sub)domain. See relay-server/README.md.
+  app:
+    image: ${ECR_REPO}:app
+    restart: always
+    ports:
+      - "8080:80"
+
+  court-upload:
+    image: ${ECR_REPO}:court-upload
+    restart: always
+    ports:
+      - "8788:8788"
+    environment:
+      - COURT_UPLOAD_PORT=8788
+      - COURT_BUCKET=${COURT_BUCKET}
+      - AWS_REGION=${AWS_REGION}
+    # No AWS keys here on purpose — credentials come from the EC2 instance's
+    # IAM role via the metadata service. See README's IMDS hop-limit note.

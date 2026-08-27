@@ -119,3 +119,43 @@ const SFX = {
     _note(c, { freq: 220, type: "sawtooth", dur: 0.12, vol: 0.04 });
     _note(c, { freq: 208, t: 0.1, type: "sawtooth", dur: 0.14, vol: 0.04 }); },
 };
+
+// ============================= Red Flag Court consequence =============================
+// A low sawtooth with a downward pitch ramp plus a burst of noise reads as
+// "fart" using the same oscillator/noise primitives as every other sound
+// here — no audio files, same synthesis approach as the rest of this file.
+function _fart(ctx, { t = 0, dur = 0.3, vol = 0.05 } = {}) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sawtooth";
+  const start = ctx.currentTime + t;
+  const startFreq = 130 + Math.random() * 40;
+  osc.frequency.setValueAtTime(startFreq, start);
+  osc.frequency.exponentialRampToValueAtTime(startFreq * 0.35, start + dur);
+  gain.gain.setValueAtTime(0, start);
+  gain.gain.linearRampToValueAtTime(vol, start + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(start);
+  osc.stop(start + dur + 0.02);
+  _noise(ctx, { t, dur: dur * 0.6, vol: vol * 0.4 });
+}
+
+const _originalSFX = {};
+let _fartModeActive = false;
+
+// While a user is consequentially flagged (moderation.js), every sound
+// effect in this file is swapped for a fart variant — reversible, so
+// clearing the flag (or a court win) restores normal sounds exactly.
+function setFartMode(active) {
+  if (active === _fartModeActive) return;
+  _fartModeActive = active;
+  if (active) {
+    Object.keys(SFX).forEach((name) => {
+      _originalSFX[name] = SFX[name];
+      SFX[name] = () => { const c = _ctx(); if (!c || _muted) return; _fart(c, { dur: 0.22 + Math.random() * 0.25 }); };
+    });
+  } else {
+    Object.keys(_originalSFX).forEach((name) => { SFX[name] = _originalSFX[name]; });
+  }
+}

@@ -21,6 +21,14 @@
 
 * { box-sizing: border-box; }
 
+/* Single source of truth for the "hidden" toggle used throughout the app.
+   !important because several elements (.lockout-screen, .modal-overlay,
+   etc.) set their own `display` unconditionally on the same class — without
+   this, cascade order (not the presence of the "hidden" class) would decide
+   visibility, which is exactly the bug that let .lockout-screen render at
+   full-screen on every load regardless of actual lockout state. */
+.hidden { display: none !important; }
+
 html, body {
   margin: 0; padding: 0;
   min-height: 100%;
@@ -171,6 +179,10 @@ body { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); positio
 .mascot-svg.mood-shocked .v-sweat { display: block; animation: dropBob 1.2s ease-in-out infinite; }
 @keyframes dropBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(3px)} }
 .mascot-svg.mood-love .v-blush, .mascot-svg.mood-happy .v-blush { opacity: .85; }
+
+/* Red Flag Court consequence — an overlay independent of mood, applied on
+   top of whatever expression is currently showing (see mascot.js). */
+.mascot-svg.mascot-flagged { filter: grayscale(0.85) brightness(0.6); transform: scaleX(-1); transition: filter .3s ease, transform .3s ease; }
 
 /* speech bubble */
 .speech-bubble {
@@ -755,3 +767,81 @@ body { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); positio
     transition-duration: .01ms !important;
   }
 }
+
+/* ============================= friends / pairing ============================= */
+.friend-tab-row { display: flex; gap: 8px; margin-bottom: 14px; }
+.friend-tab-btn { flex: 1; }
+.friend-tab-btn.is-active { background: var(--blood); color: #fff0f2; box-shadow: 0 3px 0 #6b0f1f; }
+.friend-tab-panel.hidden { display: none; }
+.my-qr-holder {
+  display: flex; justify-content: center; align-items: center;
+  background: #fff; border-radius: var(--radius); padding: 14px; margin-bottom: 14px;
+}
+.my-qr-holder svg { width: 100%; max-width: 240px; height: auto; }
+.scan-video {
+  width: 100%; border-radius: var(--radius); background: #000; margin-bottom: 10px;
+  max-height: 280px; object-fit: cover;
+}
+.scan-video.hidden { display: none; }
+#my-code-text, #paste-code-input { font-family: var(--font-mono, monospace); font-size: 11px; resize: none; }
+.friend-row-name { font-weight: 700; }
+.friend-row-sub { color: var(--text-dim); font-size: 12px; }
+.sync-status-row { margin-top: 10px; }
+[data-sync-status] { font-weight: 700; color: var(--text-dim); }
+[data-sync-status="online"] { color: var(--success, #3fb950); }
+[data-sync-status="connecting"] { color: var(--gold); }
+.friend-ping-btn { margin-left: 8px; flex-shrink: 0; }
+
+/* ============================= leaderboards ============================= */
+.seg-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.seg-btn { flex: 1; }
+.seg-btn.is-active { background: var(--blood); color: #fff0f2; box-shadow: 0 3px 0 #6b0f1f; }
+#lb-exercise-picker { margin-bottom: 12px; }
+.lb-rank { font-family: var(--font-pixel); font-size: 12px; color: var(--gold); margin-right: 8px; }
+.lb-row-me { border: 2px solid var(--blood); }
+.filter-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.filter-row .seg-btn { flex: 1; min-width: 90px; }
+#resume-card .entry-item { cursor: default; }
+.resume-rank { color: var(--gold); font-family: var(--font-pixel); font-size: 11px; }
+
+/* ============================= profile modal ============================= */
+.gender-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+.gender-opt {
+  background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius);
+  padding: 12px 8px; cursor: pointer; color: var(--text-dim); text-align: center;
+}
+.gender-opt strong { display: block; font-size: 14px; }
+.gender-opt.gender-active { border-color: var(--blood); color: var(--text); background: var(--surface-2); }
+
+/* ============================= groups ============================= */
+.group-type-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.group-type-opt {
+  background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius);
+  padding: 12px 8px; cursor: pointer; color: var(--text-dim); text-align: center;
+}
+.group-type-opt strong { display: block; font-size: 14px; }
+.group-type-opt small { display: block; font-size: 11px; margin-top: 3px; }
+.group-type-opt.group-type-active { border-color: var(--blood); color: var(--text); background: var(--surface-2); }
+.group-type-badge {
+  font-size: 10px; font-family: var(--font-pixel); padding: 3px 6px; border-radius: 3px;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text-dim);
+  text-transform: uppercase; margin-left: 6px;
+}
+.group-type-badge.group-type-snowball { color: var(--gold); border-color: #6b5320; }
+
+/* ============================= red flag court ============================= */
+.mod-member-row { flex-direction: column; align-items: stretch; gap: 8px; }
+.mod-member-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.mod-member-actions .btn { flex: 1; min-width: 100px; }
+
+.lockout-screen {
+  position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: var(--bg, #0a0612);
+}
+.lockout-card {
+  max-width: 420px; background: var(--surface); border: 2px solid var(--danger); border-radius: var(--radius);
+  padding: 24px 20px; text-align: center;
+}
+.lockout-card h2 { color: var(--danger); margin-bottom: 12px; }
+.lockout-card p { color: var(--text-dim); margin-bottom: 12px; }
+.lockout-card .btn { margin-top: 10px; }

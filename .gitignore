@@ -8,3 +8,6 @@ Thumbs.db
 node_modules/
 .vscode/
 .idea/
+
+# real env files (relay-server/.env.example is the template, this is not)
+.env

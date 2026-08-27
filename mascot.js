@@ -194,3 +194,10 @@ function mascotReact(animation, scopeEl) {
     setTimeout(() => wrap.classList.remove(`react-${animation}`), 900);
   });
 }
+
+// Red Flag Court consequence (moderation.js) — an independent overlay on
+// top of whatever mood is currently set, not part of the MOODS rotation,
+// so it doesn't fight with the app's normal happy/annoyed/etc. logic.
+function setMascotFlagged(flagged) {
+  document.querySelectorAll(".mascot-svg").forEach((svg) => svg.classList.toggle("mascot-flagged", flagged));
+}

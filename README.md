@@ -64,6 +64,14 @@ options:
 Then on your iPhone: open the URL in Safari → Share → **Add to Home Screen**.
 It launches full-screen and works offline after the first load.
 
+**Self-hosting instead** (e.g. alongside the relay from `relay-server/`):
+`Dockerfile.app` builds the same static files into a Caddy-based image
+(`file_server`, with `sw.js` served `no-cache` so the app's own update
+mechanism actually notices new versions) — see `relay-server/README.md`'s
+"Option B: Docker + ECR" for the build/push/deploy flow, which covers all
+three images (the app, the relay, and the optional court-upload service)
+together.
+
 ## Project structure
 
 ```
