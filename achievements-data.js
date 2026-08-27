@@ -4,6 +4,7 @@
 
 const ACHIEVEMENTS = [
   // ============ FIRST STEPS ============
+  { id: "welcomed", cat: "Awakening", name: "Welcomed In", desc: "Complete the first-night orientation.", icon: "🦇", check: (s) => s.onboarded },
   { id: "first-blood", cat: "Awakening", name: "First Blood", desc: "Log your first set.", icon: "🩸", check: (s) => s.totalSetsLogged >= 1 },
   { id: "plan-architect", cat: "Awakening", name: "Architect", desc: "Create your first plan.", icon: "📜", check: (s) => s.totalPlans >= 1 },
   { id: "first-split", cat: "Awakening", name: "First Descent", desc: "Complete your first split.", icon: "🗝️", check: (s) => s.totalSplitsCompleted >= 1 },

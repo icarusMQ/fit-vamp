@@ -199,6 +199,7 @@ const LS = {
   loggedLate: "ft_logged_late",
   loggedEarly: "ft_logged_early",
   perfectSplits: "ft_perfect_splits",
+  onboarded: "ft_onboarded", // shared literal with onboarding.js's ONBOARDING_LS_KEY
 };
 function lsGet(key, fb) { try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fb; } catch { return fb; } }
 function lsSet(key, v) { localStorage.setItem(key, JSON.stringify(v)); }
@@ -386,6 +387,7 @@ async function computeStats() {
     loggedLate: lsGet(LS.loggedLate, false),
     loggedEarly: lsGet(LS.loggedEarly, false),
     unlockedCount: lsGet(LS.unlocked, []).length,
+    onboarded: lsGet(LS.onboarded, false),
     xp, level, xpPercent: Math.round(((xp % 150) / 150) * 100),
     plans, workoutLogs, weightLogs, exercises,
   };
@@ -1597,6 +1599,11 @@ function showLockoutScreen() {
   // undefined) shouldn't take core workout tracking down with it.
   let lockedOut = false;
   try {
+    // Captured before getOrCreateIdentity() below (which creates the record
+    // on first run) so onboarding can tell "brand-new device" apart from
+    // "identity already existed" — an existing identity is grandfathered
+    // past onboarding rather than shown it retroactively.
+    const isFirstEverIdentity = !(await dbGet("identity", 1));
     await getOrCreateIdentity();
 
     try {
@@ -1607,6 +1614,8 @@ function showLockoutScreen() {
     } catch (err) {
       showToast(err.message || "Google sign-in failed");
     }
+
+    if (typeof runOnboardingIfNeeded === "function") await runOnboardingIfNeeded(isFirstEverIdentity);
 
     lockedOut = await checkEscalationAndLockout();
     if (!lockedOut) await applyModerationConsequences();

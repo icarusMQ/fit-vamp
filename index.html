@@ -59,6 +59,43 @@
   </div>
 </div>
 
+<!-- FIRST-BOOT ONBOARDING — shown once on a brand-new device (onboarding.js) -->
+<div id="onboarding-screen" class="onboarding-screen hidden">
+  <div class="onboarding-card">
+    <div class="mascot-dock onboarding-dock">
+      <div class="mascot-wrap" data-mascot></div>
+      <div class="speech-bubble"><p id="onboarding-line">...</p></div>
+    </div>
+
+    <div class="onboarding-step" data-step="name">
+      <label class="field-label">What should I call you?</label>
+      <input type="text" id="onboarding-username-input" class="text-input" maxlength="24" placeholder="Athlete" />
+      <p class="onboarding-preview">You'll appear as <strong id="onboarding-name-preview">Athlete#xxxx</strong></p>
+      <button class="btn btn-primary btn-full" id="onboarding-name-next">Continue</button>
+    </div>
+
+    <div class="onboarding-step hidden" data-step="relay">
+      <div class="onboarding-relay-choices">
+        <button class="btn btn-secondary btn-full" id="onboarding-relay-standard">Use the standard relay</button>
+        <button class="btn btn-ghost btn-full" id="onboarding-relay-custom-toggle">I have my own relay URL</button>
+        <button class="btn btn-ghost btn-full" id="onboarding-relay-skip">Skip — stay fully offline</button>
+      </div>
+      <div id="onboarding-relay-custom-row" class="hidden">
+        <label class="field-label">Relay address (ws:// or wss://)</label>
+        <input type="text" id="onboarding-relay-input" class="text-input" placeholder="wss://your-relay.example.com" />
+        <button class="btn btn-primary btn-full" id="onboarding-relay-custom-save">Connect</button>
+      </div>
+    </div>
+
+    <div class="onboarding-step hidden" data-step="tour">
+      <p class="onboarding-caption" id="onboarding-tour-caption"></p>
+      <div class="onboarding-dots" id="onboarding-tour-dots"></div>
+      <button class="btn btn-primary btn-full" id="onboarding-tour-next">Next</button>
+      <button class="btn btn-ghost btn-full" id="onboarding-tour-skip">Skip tour</button>
+    </div>
+  </div>
+</div>
+
 <main id="app">
 
   <!-- ============ HOME ============ -->
@@ -237,6 +274,7 @@
       </div>
       <button class="btn btn-ghost btn-sm" id="btn-edit-username">Edit</button>
     </div>
+    <button class="btn btn-ghost btn-full btn-sm" id="btn-replay-onboarding">Replay walkthrough</button>
 
     <h3 class="list-heading">Sync</h3>
     <div class="card">
@@ -812,6 +850,7 @@
 <script src="backup.js"></script>
 <script src="drive-backup.js"></script>
 <script src="backup-ui.js"></script>
+<script src="onboarding.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
