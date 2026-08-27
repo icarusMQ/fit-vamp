@@ -198,9 +198,18 @@ comment for the two endpoints.
 4. Point the app at it from **Friends → Sync → Court video upload
    endpoint**, e.g. `https://court.yourdomain.com`.
 
-**Tested without real AWS access**: the auth verification and presigned-URL
-generation logic is exercised in `court-upload-server.js`'s own tests using
-fake credentials — `getSignedUrl` signs locally and never calls AWS, so that
-part is genuinely verified. What is *not* verified here is an actual PUT/GET
-against a real bucket, or that the IAM policy above is sufficient — worth a
-real smoke test once you've created the bucket.
+**Verified against real AWS** (not just fake-credential unit tests): a real
+S3 bucket with the lifecycle rule above, a real IAM role scoped exactly as
+documented, and the real deployed `court-upload-server.js` behind Caddy —
+signed a request with a throwaway ECDSA keypair, got a real presigned
+upload URL, `PUT` real bytes straight to S3, requested a fresh view URL
+with a separate signed request, `GET` it back, and confirmed the bytes
+round-tripped correctly. Also confirmed two rejection paths work under
+real network conditions, not just in the local unit tests: a signed
+request claiming a `targetPubkey` that doesn't match the signer (403), and
+replaying an already-used nonce (401, see the nonce freshness/replay
+tracking added after an earlier review — `checkAndConsumeNonce` in this
+file). The one thing still genuinely unverified is the lifecycle rule's
+actual 14-day deletion firing (confirmed the rule is *configured*
+correctly via `get-bucket-lifecycle-configuration`; watching it actually
+fire takes 14 real days).

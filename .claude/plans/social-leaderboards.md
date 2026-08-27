@@ -445,9 +445,9 @@ authority.
 8. ✅ Red Flag Court (`moderation.js` pure logic + submission/escalation,
    `moderation-ui.js` rendering/wiring), built immediately after step 6 —
    reporting, threshold, voting, mascot/sound/Drops consequences, and
-   3-strike lockout are all in and verified; the S3 video-upload piece is
-   real, working code that's untested against actual AWS (no credentials in
-   this environment) — see below.
+   3-strike lockout are all in and verified; the S3 video-upload piece was
+   real, working code untested against actual AWS when this step was first
+   built — since verified for real, see below.
    - **Reporting/threshold/voting**: fully event-sourced like everything
      else — `reports`/`courtVotes`/`flagHistory` are local caches, flag
      state is a pure function over them (`flagThreshold`, `flaggedAt`,
@@ -496,9 +496,12 @@ authority.
      `court-upload-server.js`'s auth + presigned-URL logic with fake AWS
      credentials (`getSignedUrl` signs locally, never calls AWS, so this
      is real verification) — valid/forged/impersonated/malformed requests
-     all get the right status codes and a real-shaped signed URL. **Not
-     verified**: an actual PUT/GET against a real S3 bucket, or that the
-     documented IAM policy is sufficient — needs a real AWS smoke test.
+     all get the right status codes and a real-shaped signed URL. **Since
+     verified for real** (see `relay-server/README.md`'s Red Flag Court
+     section): a real bucket, a real IAM role scoped exactly as
+     documented, a real signed request, an actual PUT/GET round-trip
+     through S3, and both the forged-target and nonce-replay rejections
+     holding under real network conditions.
 9. ✅ Polish.
    - **Relay rate limiting**: already adequate from step 3 (20 sends/sec per
      authenticated pubkey) — nothing to add.
@@ -540,12 +543,14 @@ authority.
   profile data is E2E-encrypted per-recipient, never sent to the relay in
   the clear) rather than something that could leak group-wide by accident.
 - **Real AWS/Google testing**: this whole build happened without any real
-  AWS or Google credentials, so three pieces are correct-against-spec but
-  genuinely unexercised end-to-end: the relay/court-upload servers against
-  real S3 (their auth and presigning logic *is* verified — see step 8 — but
-  not an actual bucket), and `drive-backup.js`'s OAuth/Drive calls against
-  a real client id. Worth a real smoke test of all three before depending
-  on them.
+  AWS or Google credentials, so three pieces were originally correct-
+  against-spec but genuinely unexercised end-to-end. Two are now done for
+  real: the relay is deployed and live (`wss://56.125.84.213.sslip.io`,
+  see `relay-server/README.md`'s Option B), and `court-upload-server.js`
+  has been verified against a real S3 bucket and a real IAM role — see the
+  "Verified against real AWS" note in `relay-server/README.md`'s Red Flag
+  Court section. Still outstanding: `drive-backup.js`'s OAuth/Drive calls
+  against a real Google client id.
 - **Passphrase recovery**: there is none, by design (see backup.js) — a
   forgotten backup passphrase means that backup is gone. Worth deciding if
   that's the right tradeoff or if a recovery-phrase-style mechanism is
