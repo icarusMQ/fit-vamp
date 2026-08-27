@@ -148,7 +148,11 @@ function setCourtEndpoint(url) { localStorage.setItem(COURT_ENDPOINT_LS_KEY, url
 
 async function signedCourtRequest(extraFields) {
   const identity = await getOrCreateIdentity();
-  const nonce = crypto.randomUUID();
+  // Timestamp-prefixed so the server can reject stale or replayed nonces
+  // (see relay-server/court-upload-server.js's checkAndConsumeNonce) —
+  // a bare random nonce with no freshness signal would let a captured
+  // request be replayed forever to keep minting fresh signed URLs.
+  const nonce = `${Date.now()}:${crypto.randomUUID()}`;
   const sig = bufToB64Url(await crypto.subtle.sign(
     { name: "ECDSA", hash: "SHA-256" }, identity.privateKey, new TextEncoder().encode(nonce)
   ));
@@ -247,7 +251,17 @@ async function deleteAllMyData() {
     for (const f of friends) {
       await queueOutbox(f.pubkey, "revoke", { scope: "friend", targetPubkey: identity.pubkeyB64 });
     }
-    await new Promise((r) => setTimeout(r, 1500)); // give the outbox a moment to actually flush before we wipe it
+    // Poll until the outbox actually drains (confirmed sent, not just
+    // queued) instead of trusting a fixed timer — a blind 1.5s wait could
+    // wipe the outbox, and the revoke notices in it, before anything was
+    // delivered. Still bounded: if we're offline and it'll never drain,
+    // the user needs a way to finish wiping their data regardless.
+    const deadline = Date.now() + 8000;
+    while (Date.now() < deadline) {
+      const remaining = await dbGetAll("outbox");
+      if (!remaining.length) break;
+      await new Promise((r) => setTimeout(r, 300));
+    }
   }
   const db = await openDB();
   db.close();

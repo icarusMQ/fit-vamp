@@ -155,7 +155,7 @@ async function handleIncoming(fromPubkey, plain) {
       const events = await dbGetAll("leaderboardEvents");
       for (const e of events) if (e.authorPubkey === fromPubkey) await dbDelete("leaderboardEvents", e.id);
     } else if (scope === "group" && typeof applyIncomingRevoke === "function") {
-      await applyIncomingRevoke(plain.data);
+      await applyIncomingRevoke(fromPubkey, plain.data);
     }
     if (typeof refreshCurrentTab === "function") refreshCurrentTab();
     return;
@@ -164,8 +164,12 @@ async function handleIncoming(fromPubkey, plain) {
     const r = plain.data;
     // Trust fromPubkey as the actual reporter over whatever the payload
     // claims — a forwarded/replayed report can't be credited to someone
-    // who didn't send it.
+    // who didn't send it. Also require fromPubkey to actually be a member
+    // of the target group — otherwise a removed/never-member friend could
+    // stuff reports toward the flag threshold.
     if (!r || r.reporterPubkey !== fromPubkey) return;
+    const reportGroup = await dbGet("groups", r.groupId);
+    if (!reportGroup || !reportGroup.memberPubkeys.includes(fromPubkey)) return;
     await dbPut("reports", r);
     if (typeof checkEscalationAndLockout === "function") await checkEscalationAndLockout();
     if (typeof applyModerationConsequences === "function") await applyModerationConsequences();
@@ -175,6 +179,8 @@ async function handleIncoming(fromPubkey, plain) {
   if (plain.type === "court-vote") {
     const v = plain.data;
     if (!v || v.voterPubkey !== fromPubkey) return;
+    const voteGroup = await dbGet("groups", v.groupId);
+    if (!voteGroup || !voteGroup.memberPubkeys.includes(fromPubkey)) return;
     await dbPut("courtVotes", v);
     if (typeof checkEscalationAndLockout === "function") await checkEscalationAndLockout();
     if (typeof applyModerationConsequences === "function") await applyModerationConsequences();
@@ -229,7 +235,7 @@ function connectRelay() {
       if (!sender) return;
       let plain;
       try { plain = await decryptFrom(sender, msg.payload); } catch { return; }
-      handleIncoming(msg.from, plain);
+      try { await handleIncoming(msg.from, plain); } catch (err) { console.error("handleIncoming failed", err); }
       return;
     }
   });

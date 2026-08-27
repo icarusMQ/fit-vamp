@@ -56,7 +56,13 @@ function flushQueueTo(pubkey, ws) {
   if (!q || !q.length) return;
   const now = Date.now();
   for (const msg of q) {
-    if (msg.expiresAt > now) send(ws, { type: "deliver", from: msg.from, payload: msg.payload, ts: msg.ts });
+    if (msg.expiresAt > now) {
+      // Replay the full envelope (minus the queue-only expiresAt), same
+      // shape as the live-delivery path — dropping fromEcdhPubkey here would
+      // silently break introductions to recipients who were offline.
+      const { expiresAt, ...envelope } = msg;
+      send(ws, { type: "deliver", ...envelope });
+    }
   }
   queues.delete(pubkey);
 }

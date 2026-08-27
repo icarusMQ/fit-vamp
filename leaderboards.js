@@ -143,7 +143,7 @@ async function renderLeaderboardsTab() {
 
   const win = windowFor(currentLbWindow, todayStr());
   const flaggedPubkeys = await computeFlaggedPubkeys(currentLbScope || null);
-  const filters = { since: win.since, until: win.until, pubkeys, flaggedPubkeys };
+  const filters = { since: win.since, until: win.until, pubkeys, flaggedPubkeys, viewerPubkey: myPubkey };
 
   const list = document.getElementById("leaderboard-list");
   if (currentLbMetric === "consistency") {
@@ -226,7 +226,7 @@ async function computeMyBestPlacements(maxResults = 3) {
         const slicePubkeys = resolvePubkeysForSlice(sliceName, events, identity, people);
         if (slicePubkeys && slicePubkeys.size === 0) continue; // don't qualify for this slice
         const pubkeys = intersectPubkeySets(scopePubkeys, slicePubkeys);
-        const filters = { since: win.since, until: win.until, pubkeys, flaggedPubkeys };
+        const filters = { since: win.since, until: win.until, pubkeys, flaggedPubkeys, viewerPubkey: myPubkey };
         const tail = `${scope.name} · ${SLICE_LABELS[sliceName]} · ${win.label}`;
 
         rankIn(computeTotalDropsLeaderboard(events, filters), `Total Drops · ${tail}`);

@@ -134,7 +134,11 @@ function passesFilters(e, { since, until, pubkeys } = {}) {
   return true;
 }
 
-function dropsMultiplierFor(pubkey, flaggedPubkeys) {
+// Exempts filters.viewerPubkey from the multiplier — per the design (see
+// moderation.js's header), the 0.2x penalty is what *other* people see, not
+// something a flagged user's own device applies to their own numbers.
+function dropsMultiplierFor(pubkey, flaggedPubkeys, viewerPubkey) {
+  if (pubkey === viewerPubkey) return 1;
   return flaggedPubkeys && flaggedPubkeys.has(pubkey) ? FLAGGED_DROPS_MULTIPLIER : 1;
 }
 
@@ -144,7 +148,7 @@ function computeTotalDropsLeaderboard(events, filters = {}) {
     if (!passesFilters(e, filters)) continue;
     totals.set(e.authorPubkey, (totals.get(e.authorPubkey) || 0) + (e.drops || 0));
   }
-  return [...totals.entries()].map(([pubkey, value]) => ({ pubkey, value: value * dropsMultiplierFor(pubkey, filters.flaggedPubkeys) }));
+  return [...totals.entries()].map(([pubkey, value]) => ({ pubkey, value: value * dropsMultiplierFor(pubkey, filters.flaggedPubkeys, filters.viewerPubkey) }));
 }
 
 function computeExerciseLeaderboard(events, canonicalExerciseId, filters = {}) {
@@ -153,7 +157,7 @@ function computeExerciseLeaderboard(events, canonicalExerciseId, filters = {}) {
     if (e.canonicalExerciseId !== canonicalExerciseId || !passesFilters(e, filters)) continue;
     totals.set(e.authorPubkey, (totals.get(e.authorPubkey) || 0) + (e.drops || 0));
   }
-  return [...totals.entries()].map(([pubkey, value]) => ({ pubkey, value: value * dropsMultiplierFor(pubkey, filters.flaggedPubkeys) }));
+  return [...totals.entries()].map(([pubkey, value]) => ({ pubkey, value: value * dropsMultiplierFor(pubkey, filters.flaggedPubkeys, filters.viewerPubkey) }));
 }
 
 function computeConsistencyLeaderboard(events, filters) {

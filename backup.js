@@ -101,7 +101,10 @@ async function decryptBackupFile(fileText, passphrase) {
 async function restoreFromPayload(payload) {
   if (!payload || payload.v !== 1 || !payload.identity || !payload.stores) throw new Error("Unrecognized backup format.");
 
-  for (const storeName of ["identity", ...BACKUP_STORES]) await dbClear(storeName);
+  // Also clear "outbox" even though it's never backed up (it's a send
+  // buffer, not history) — leaving stale queued messages behind would send
+  // them out under the newly restored identity once flushOutbox() runs.
+  for (const storeName of ["identity", "outbox", ...BACKUP_STORES]) await dbClear(storeName);
 
   const identityRecord = await plainToIdentity(payload.identity);
   await dbAdd("identity", identityRecord);

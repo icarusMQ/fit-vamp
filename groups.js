@@ -188,7 +188,11 @@ async function applyIncomingGroupRoster(incoming) {
   }
 }
 
-async function applyIncomingRevoke(data) {
+async function applyIncomingRevoke(fromPubkey, data) {
+  // Only self-revoke exists (leaveGroup always sets targetPubkey to the
+  // leaver's own pubkey) — there's no admin-removal concept, so a group
+  // revoke must never remove anyone other than whoever actually sent it.
+  if (!data || fromPubkey !== data.targetPubkey) return;
   const group = await dbGet("groups", data.groupId);
   if (!group || !group.memberPubkeys.includes(data.targetPubkey)) return;
   group.memberPubkeys = group.memberPubkeys.filter((pk) => pk !== data.targetPubkey);

@@ -27,6 +27,31 @@ const UPLOAD_URL_TTL_SEC = 5 * 60;
 // request instead of once at upload time and stored for the whole window.
 const VIEW_URL_TTL_SEC = 60 * 60;
 
+// Nonces are client-generated here (unlike server.js's relay, whose nonce
+// is server-issued per connection), so without a freshness/replay check a
+// single captured {pubkey, nonce, sig, ...} request could be replayed
+// forever to keep minting fresh presigned S3 URLs. Nonces are
+// "<timestamp>:<random>" (see moderation.js's signedCourtRequest).
+const NONCE_MAX_AGE_MS = 60 * 1000;
+const NONCE_CLOCK_SKEW_MS = 5 * 1000;
+const usedNonces = new Map(); // nonce -> expiresAt
+
+function pruneUsedNonces() {
+  const now = Date.now();
+  for (const [nonce, expiresAt] of usedNonces) if (expiresAt <= now) usedNonces.delete(nonce);
+}
+
+function checkAndConsumeNonce(nonce) {
+  const ts = Number(String(nonce).split(":")[0]);
+  if (!Number.isFinite(ts)) return false;
+  const now = Date.now();
+  if (now - ts > NONCE_MAX_AGE_MS || ts - now > NONCE_CLOCK_SKEW_MS) return false;
+  pruneUsedNonces();
+  if (usedNonces.has(nonce)) return false;
+  usedNonces.set(nonce, now + NONCE_MAX_AGE_MS + NONCE_CLOCK_SKEW_MS);
+  return true;
+}
+
 function b64UrlToBuf(str) {
   const b64 = str.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((str.length + 3) % 4);
   return Buffer.from(b64, "base64");
@@ -70,6 +95,7 @@ function createServer({ s3Client, bucket = BUCKET } = {}) {
       if (pubkey !== targetPubkey) { res.writeHead(403); res.end("only the target can submit a defense"); return; }
       const ok = await verifySignature(pubkey, nonce, sig);
       if (!ok) { res.writeHead(401); res.end("bad signature"); return; }
+      if (!checkAndConsumeNonce(nonce)) { res.writeHead(401); res.end("stale or reused nonce"); return; }
 
       const ext = (contentType || "video/webm").includes("mp4") ? "mp4" : "webm";
       const key = `court/${groupId}/${targetPubkey}/${Date.now()}.${ext}`;
@@ -98,6 +124,7 @@ function createServer({ s3Client, bucket = BUCKET } = {}) {
       if (!key.startsWith("court/")) { res.writeHead(400); res.end("bad key"); return; }
       const ok = await verifySignature(pubkey, nonce, sig);
       if (!ok) { res.writeHead(401); res.end("bad signature"); return; }
+      if (!checkAndConsumeNonce(nonce)) { res.writeHead(401); res.end("stale or reused nonce"); return; }
       try {
         const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: VIEW_URL_TTL_SEC });
         res.writeHead(200, { "Content-Type": "application/json" });

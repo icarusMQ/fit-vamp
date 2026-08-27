@@ -1586,22 +1586,36 @@ function showLockoutScreen() {
   mountMascots();
   await openDB();
   await seedExercisesIfEmpty();
-  await getOrCreateIdentity();
+  // Unconditional and early: this previously sat after the lockout check,
+  // so a locked-out device could never (re)register the service worker and
+  // would keep serving whatever it last cached indefinitely.
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 
+  // The whole identity/social layer is wrapped in one try/catch — this app
+  // was fully offline-functional before social features existed, and a
+  // WebCrypto failure (e.g. a non-secure context, where crypto.subtle is
+  // undefined) shouldn't take core workout tracking down with it.
+  let lockedOut = false;
   try {
-    if (await completeDriveAuthIfRedirected()) {
-      showToast("Connected to Google Drive");
-      if (typeof renderBackupCard === "function") renderBackupCard();
+    await getOrCreateIdentity();
+
+    try {
+      if (await completeDriveAuthIfRedirected()) {
+        showToast("Connected to Google Drive");
+        if (typeof renderBackupCard === "function") renderBackupCard();
+      }
+    } catch (err) {
+      showToast(err.message || "Google sign-in failed");
     }
+
+    lockedOut = await checkEscalationAndLockout();
+    if (!lockedOut) await applyModerationConsequences();
   } catch (err) {
-    showToast(err.message || "Google sign-in failed");
+    console.error("Social/identity init failed — continuing in offline-only mode.", err);
   }
 
-  const lockedOut = await checkEscalationAndLockout();
   if (lockedOut) { showLockoutScreen(); return; }
-  await applyModerationConsequences();
 
   await renderHome();
   await checkAchievements();
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 })();
