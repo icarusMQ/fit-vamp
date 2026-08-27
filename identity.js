@@ -164,6 +164,12 @@ async function importFriendFromPayload(raw) {
   if (data.pk === identity.pubkeyB64) throw new Error("That's your own code.");
   const friend = await upsertFriendFromKeys(data);
   if (!friend) throw new Error("That's your own code.");
+  // Scanning only adds the friend on *this* device — without telling them,
+  // they'd never learn the scanner exists. queueOutbox already works here
+  // since `friend` (with its ecdhPubkey) was just written above.
+  if (typeof queueOutbox === "function") {
+    await queueOutbox(friend.pubkey, "friend-add", { ek: identity.ecdhPubkeyB64, n: identity.username, t: identity.userTag });
+  }
   return friend;
 }
 

@@ -123,6 +123,20 @@ async function handleIncoming(fromPubkey, plain) {
     showToast(`Ping from ${friend ? displayNameOf({ username: friend.username, userTag: friend.userTag }) : "a friend"}!`);
     return;
   }
+  if (plain.type === "friend-add") {
+    // Sent by identity.js right after *scanning* someone's code — a QR scan
+    // only ever adds the friend on the scanner's own device, so without this
+    // the scanned person never learns the scanner exists. Uses fromPubkey
+    // (relay-authenticated) as the pk, not anything the payload claims, same
+    // trust pattern as everywhere else here. Works even if this is the first
+    // message ever received from them, same as a group-roster introduction —
+    // decryption already succeeded via fromEcdhPubkey (see flushOutbox).
+    if (typeof upsertFriendFromKeys === "function") {
+      await upsertFriendFromKeys({ pk: fromPubkey, ek: plain.data?.ek, n: plain.data?.n, t: plain.data?.t });
+    }
+    if (typeof refreshCurrentTab === "function") refreshCurrentTab();
+    return;
+  }
   if (plain.type === "workout-event") {
     const event = plain.data;
     // Trust the relay-authenticated sender over anything the payload claims —
