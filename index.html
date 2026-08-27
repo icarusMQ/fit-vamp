@@ -48,6 +48,17 @@
   </div>
 </header>
 
+<!-- RED FLAG COURT LOCKOUT — shown instead of the app once 3 flags are upheld -->
+<div id="lockout-screen" class="lockout-screen hidden">
+  <div class="lockout-card">
+    <h2>Account Locked</h2>
+    <p>3 Red Flag Court cases have been upheld against you. The app is locked — the only action left is deleting your data.</p>
+    <p class="empty-state">This removes everything on this device and tells every paired friend to forget you too. It can't be undone.</p>
+    <button class="btn btn-danger btn-full" id="btn-lockout-delete">Delete My Data</button>
+    <button class="btn btn-danger btn-full hidden" id="btn-lockout-delete-confirm">Tap again to confirm — this is permanent</button>
+  </div>
+</div>
+
 <main id="app">
 
   <!-- ============ HOME ============ -->
@@ -100,6 +111,11 @@
       Log Weight
     </button>
 
+    <div class="card" id="resume-card">
+      <div class="trend-head"><span class="trend-label">YOUR BEST PLACEMENTS</span></div>
+      <ul id="resume-list" class="entry-list"><li class="empty-state">Pair a friend (Library → Friends) to start competing.</li></ul>
+    </div>
+
     <div class="home-calendar">
       <div class="calendar-nav">
         <button class="btn btn-icon" id="cal-prev">‹</button>
@@ -139,6 +155,21 @@
       <li class="menu-item" data-goto="tab-achievements">
         <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M7 4h10v4a5 5 0 0 1-10 0zM5 5h2v3a3 3 0 0 1-2-3zm14 0h-2v3a3 3 0 0 0 2-3zM10 14h4v3h-4zM8 19h8v2H8z"/></svg>
         <div class="menu-text"><span>Achievements</span><small id="lib-ach-meta"></small></div>
+        <span class="menu-chevron">›</span>
+      </li>
+      <li class="menu-item" data-goto="tab-friends">
+        <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M17 11a3 3 0 1 0 0-6M15 14c2.8.3 5 2.7 5 6"/></svg>
+        <div class="menu-text"><span>Friends</span><small id="lib-friends-meta"></small></div>
+        <span class="menu-chevron">›</span>
+      </li>
+      <li class="menu-item" data-goto="tab-groups">
+        <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M4 20a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
+        <div class="menu-text"><span>Groups</span><small id="lib-groups-meta"></small></div>
+        <span class="menu-chevron">›</span>
+      </li>
+      <li class="menu-item" data-goto="tab-leaderboards">
+        <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M4 21h16M6 21V10h4v11M14 21V4h4v17M2 21h2M20 21h2"/></svg>
+        <div class="menu-text"><span>Leaderboards</span><small id="lib-lb-meta"></small></div>
         <span class="menu-chevron">›</span>
       </li>
     </ul>
@@ -191,6 +222,106 @@
       <div class="xp-bar-track"><div id="ach-progress-fill" class="xp-bar-fill" style="width:0%"></div></div>
     </div>
     <div id="achievements-list"></div>
+  </section>
+
+  <!-- ============ FRIENDS ============ -->
+  <section id="tab-friends" class="tab-panel">
+    <div class="section-heading">
+      <h2>Friends</h2>
+      <button class="btn btn-small btn-primary" id="btn-add-friend">+ Add</button>
+    </div>
+    <div class="card card-row" id="my-identity-card">
+      <div class="menu-text">
+        <span id="my-identity-name">—</span>
+        <small>This device's pairing identity</small>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="btn-edit-username">Edit</button>
+    </div>
+
+    <h3 class="list-heading">Sync</h3>
+    <div class="card">
+      <label class="field-label">Relay address (ws:// or wss://)</label>
+      <input type="text" id="relay-url-input" class="text-input" placeholder="wss://your-relay.example.com" />
+      <div class="card-row sync-status-row">
+        <span class="card-label">Status: <span data-sync-status>Offline</span></span>
+        <button class="btn btn-secondary btn-sm" id="save-relay-url">Save &amp; Connect</button>
+      </div>
+      <p class="empty-state">Leave blank to keep everything on this device — friends still pair via QR, they just won't sync live.</p>
+
+      <label class="field-label">Court video upload endpoint (optional)</label>
+      <input type="text" id="court-endpoint-input" class="text-input" placeholder="https://your-relay.example.com:8788" />
+      <button class="btn btn-secondary btn-full btn-sm" id="save-court-endpoint">Save</button>
+      <p class="empty-state">Only needed to submit or watch Red Flag Court defense videos — see relay-server/court-upload-server.js.</p>
+    </div>
+
+    <h3 class="list-heading">Backup</h3>
+    <div class="card">
+      <p class="empty-state">Without a backup, reinstalling this app means starting over as a new identity — friends would need to re-pair. A backup restores everything, including your pubkey, so nobody notices.</p>
+      <div class="filter-row">
+        <button class="btn btn-secondary btn-sm seg-btn" id="btn-export-backup">Export Backup</button>
+        <button class="btn btn-secondary btn-sm seg-btn" id="btn-restore-backup">Restore Backup</button>
+      </div>
+      <input type="file" id="backup-file-input" accept="application/json" class="hidden" />
+
+      <label class="field-label">Google Drive (optional)</label>
+      <input type="text" id="drive-client-id-input" class="text-input" placeholder="Google OAuth client id" />
+      <button class="btn btn-secondary btn-full btn-sm" id="save-drive-client-id">Save Client ID</button>
+      <p class="empty-state">Create one in Google Cloud Console → Credentials → OAuth client ID → Web application, with this page's URL as an authorized origin and redirect URI, and enable the Drive API. See drive-backup.js.</p>
+
+      <div id="drive-connect-row">
+        <button class="btn btn-secondary btn-full btn-sm" id="btn-connect-drive">Connect Google Drive</button>
+      </div>
+      <div id="drive-connected-row" class="hidden">
+        <div class="filter-row">
+          <button class="btn btn-secondary btn-sm seg-btn" id="btn-backup-drive">Backup to Drive</button>
+          <button class="btn btn-secondary btn-sm seg-btn" id="btn-restore-drive">Restore from Drive</button>
+        </div>
+        <button class="btn btn-ghost btn-full btn-sm" id="btn-disconnect-drive">Disconnect</button>
+      </div>
+    </div>
+
+    <h3 class="list-heading">Paired devices</h3>
+    <ul id="friends-list" class="entry-list"><li class="empty-state">No friends yet — tap + Add to pair a device.</li></ul>
+  </section>
+
+  <!-- ============ GROUPS ============ -->
+  <section id="tab-groups" class="tab-panel">
+    <div class="section-heading">
+      <h2>Groups</h2>
+      <button class="btn btn-small btn-primary" id="btn-new-group">+ New</button>
+    </div>
+    <ul id="groups-list" class="entry-list"><li class="empty-state">No groups yet — tap + New to create one.</li></ul>
+    <p class="empty-state">Bounded groups only link you to that group's members. Snowball groups also merge with any other snowball group a member is in — see the group type picker when creating one.</p>
+  </section>
+
+  <!-- ============ LEADERBOARDS ============ -->
+  <section id="tab-leaderboards" class="tab-panel">
+    <div class="section-heading"><h2>Leaderboards</h2></div>
+
+    <select id="lb-scope-picker" class="text-input"><option value="">All Friends</option></select>
+
+    <div class="seg-row">
+      <button class="btn btn-secondary btn-sm seg-btn is-active" data-lb-metric="total">Total Drops</button>
+      <button class="btn btn-secondary btn-sm seg-btn" data-lb-metric="consistency">Consistency</button>
+      <button class="btn btn-secondary btn-sm seg-btn" data-lb-metric="exercise">By Exercise</button>
+    </div>
+    <select id="lb-exercise-picker" class="text-input hidden"></select>
+
+    <div class="filter-row">
+      <button class="btn btn-ghost btn-sm seg-btn is-active" data-lb-window="all">All-Time</button>
+      <button class="btn btn-ghost btn-sm seg-btn" data-lb-window="month">This Month</button>
+      <button class="btn btn-ghost btn-sm seg-btn" data-lb-window="cycle">5-Month Cycle</button>
+    </div>
+    <div class="filter-row">
+      <button class="btn btn-ghost btn-sm seg-btn is-active" data-lb-slice="everyone">Everyone</button>
+      <button class="btn btn-ghost btn-sm seg-btn" data-lb-slice="gender">Same Gender</button>
+      <button class="btn btn-ghost btn-sm seg-btn" data-lb-slice="height">Same Height</button>
+      <button class="btn btn-ghost btn-sm seg-btn" data-lb-slice="level">Same Level</button>
+    </div>
+    <p id="lb-slice-status" class="empty-state hidden"></p>
+
+    <ul id="leaderboard-list" class="entry-list"><li class="empty-state">Log a workout to get on the board.</li></ul>
+    <p class="empty-state">Ranked against paired friends only — see Friends to pair a device.</p>
   </section>
 
 </main>
@@ -498,6 +629,169 @@
   </div>
 </div>
 
+<!-- ADD FRIEND -->
+<div id="modal-add-friend" class="modal-overlay hidden">
+  <div class="modal-sheet modal-sheet-tall">
+    <div class="modal-header">
+      <h3>Add Friend</h3>
+      <button class="modal-close" data-close="modal-add-friend">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="friend-tab-row">
+        <button class="btn btn-secondary btn-sm friend-tab-btn is-active" data-friend-tab="mycode">My Code</button>
+        <button class="btn btn-secondary btn-sm friend-tab-btn" data-friend-tab="scan">Scan / Paste</button>
+      </div>
+
+      <div id="friend-tab-mycode" class="friend-tab-panel">
+        <div id="my-qr-holder" class="my-qr-holder"></div>
+        <label class="field-label">Or share this code</label>
+        <textarea id="my-code-text" class="text-input" rows="3" readonly></textarea>
+        <button class="btn btn-secondary btn-full btn-sm" id="btn-copy-code">Copy Code</button>
+      </div>
+
+      <div id="friend-tab-scan" class="friend-tab-panel hidden">
+        <video id="scan-video" class="scan-video hidden" playsinline muted></video>
+        <button class="btn btn-secondary btn-full btn-sm" id="btn-toggle-scan">Start Camera</button>
+        <p id="scan-status" class="empty-state hidden"></p>
+        <label class="field-label">Or paste a friend's code</label>
+        <textarea id="paste-code-input" class="text-input" rows="3" placeholder="Paste code here"></textarea>
+        <button class="btn btn-primary btn-full" id="btn-submit-pasted-code">Add Friend</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT USERNAME -->
+<div id="modal-edit-username" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <h3>Your Profile</h3>
+      <button class="modal-close" data-close="modal-edit-username">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="field-label">Name shown to friends</label>
+      <input type="text" id="edit-username-input" class="text-input" maxlength="24" />
+
+      <label class="field-label">Gender (optional — for gender leaderboards)</label>
+      <div class="gender-picker">
+        <button class="gender-opt" data-gender="M"><strong>Male</strong></button>
+        <button class="gender-opt" data-gender="F"><strong>Female</strong></button>
+      </div>
+      <p class="empty-state">Tap again to clear. Leave unset to only appear in unisex boards.</p>
+
+      <label class="field-label">Height in cm (optional — for height leaderboards)</label>
+      <input type="number" inputmode="numeric" id="edit-height-input" class="text-input" placeholder="e.g. 178" />
+
+      <button class="btn btn-primary btn-full" id="save-username">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW GROUP -->
+<div id="modal-new-group" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <h3>New Group</h3>
+      <button class="modal-close" data-close="modal-new-group">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="field-label">Group name</label>
+      <input type="text" id="new-group-name-input" class="text-input" maxlength="40" placeholder="e.g. Leg Day Crew" />
+
+      <label class="field-label">Type</label>
+      <div class="group-type-picker">
+        <button class="group-type-opt group-type-active" data-group-type="bounded">
+          <strong>Bounded</strong><small>only links you to this group's members</small>
+        </button>
+        <button class="group-type-opt" data-group-type="snowball">
+          <strong>Snowball</strong><small>also merges with your other snowball groups</small>
+        </button>
+      </div>
+
+      <button class="btn btn-primary btn-full" id="save-new-group">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- GROUP INVITE -->
+<div id="modal-group-invite" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <h3>Invite to Group</h3>
+      <button class="modal-close" data-close="modal-group-invite">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="group-invite-qr-holder" class="my-qr-holder"></div>
+      <label class="field-label">Or share this code</label>
+      <textarea id="group-invite-code-text" class="text-input" rows="4" readonly></textarea>
+      <button class="btn btn-secondary btn-full btn-sm" id="btn-copy-group-code">Copy Code</button>
+      <p class="empty-state">Scanning this also pairs the new member with everyone currently in the group.</p>
+    </div>
+  </div>
+</div>
+
+<!-- GROUP MEMBERS / MODERATION -->
+<div id="modal-group-members" class="modal-overlay hidden">
+  <div class="modal-sheet modal-sheet-tall">
+    <div class="modal-header">
+      <h3 id="group-members-title">Group</h3>
+      <button class="modal-close" data-close="modal-group-members">✕</button>
+    </div>
+    <div class="modal-body">
+      <ul id="group-members-list" class="entry-list"></ul>
+      <p class="empty-state">Reporting is per-group. A member is flagged once distinct reports reach 10% of the group (max 10 people). Once flagged, they have 14 days to record a defense before the group's vote (or a timeout) decides.</p>
+    </div>
+  </div>
+</div>
+
+<!-- REPORT REASON -->
+<div id="modal-report-reason" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <h3>Report Member</h3>
+      <button class="modal-close" data-close="modal-report-reason">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="field-label">Reason (optional)</label>
+      <textarea id="report-reason-input" class="text-input" rows="3" placeholder="What happened?"></textarea>
+      <button class="btn btn-danger btn-full" id="submit-report">Submit Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEFENSE RECORDER -->
+<div id="modal-defense-recorder" class="modal-overlay hidden">
+  <div class="modal-sheet modal-sheet-tall">
+    <div class="modal-header">
+      <h3>Record Your Defense</h3>
+      <button class="modal-close" data-close="modal-defense-recorder">✕</button>
+    </div>
+    <div class="modal-body">
+      <video id="defense-video-preview" class="scan-video hidden" playsinline muted></video>
+      <button class="btn btn-secondary btn-full btn-sm" id="btn-toggle-defense-recording">Start Recording</button>
+      <p id="defense-status" class="empty-state"></p>
+      <button class="btn btn-primary btn-full hidden" id="btn-submit-defense">Submit Defense</button>
+    </div>
+  </div>
+</div>
+
+<!-- BACKUP PASSPHRASE (shared by export/restore, local/Drive) -->
+<div id="modal-backup-passphrase" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <h3 id="backup-passphrase-title">Backup Passphrase</h3>
+      <button class="modal-close" data-close="modal-backup-passphrase">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="field-label">Passphrase</label>
+      <input type="password" id="backup-passphrase-input" class="text-input" placeholder="At least 6 characters" />
+      <p class="empty-state">This never leaves your device and isn't stored anywhere — if you forget it, the backup can't be recovered.</p>
+      <p id="backup-passphrase-status" class="empty-state"></p>
+      <button class="btn btn-primary btn-full" id="backup-passphrase-continue">Continue</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast hidden"></div>
 
 <script src="exercises-data.js"></script>
@@ -505,6 +799,19 @@
 <script src="sounds.js"></script>
 <script src="mascot.js"></script>
 <script src="dialogue.js"></script>
+<script src="vendor/qrcode.min.js"></script>
+<script src="vendor/qrcode-utf8.min.js"></script>
+<script src="vendor/jsQR.min.js"></script>
+<script src="identity.js"></script>
+<script src="groups.js"></script>
+<script src="sync.js"></script>
+<script src="drops.js"></script>
+<script src="leaderboards.js"></script>
+<script src="moderation.js"></script>
+<script src="moderation-ui.js"></script>
+<script src="backup.js"></script>
+<script src="drive-backup.js"></script>
+<script src="backup-ui.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

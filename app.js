@@ -1,8 +1,15 @@
-/* FitTrack — all data stays on this device (IndexedDB + localStorage). No network calls. */
+/* FitTrack — all data stays on this device (IndexedDB + localStorage).
+   The only outbound network calls this app makes are opt-in and to servers
+   you configure yourself (Friends tab): a WebSocket relay for end-to-end
+   encrypted sync with devices you've paired via QR (sync.js), and — only if
+   you submit or watch a Red Flag Court defense video — a small HTTP
+   endpoint that hands back presigned S3 upload/view URLs (moderation.js).
+   Neither ever sees plaintext content. See .claude/plans/social-
+   leaderboards.md. */
 
 // ============================= DB =============================
 const DB_NAME = "fittrack-lite";
-const DB_VERSION = 2;
+const DB_VERSION = 7;
 const MAX_LOGS_PER_EXERCISE = 10;
 const REST_SECONDS = 180;
 let dbPromise = null;
@@ -29,6 +36,49 @@ function openDB() {
       if (!db.objectStoreNames.contains("plans")) {
         db.createObjectStore("plans", { keyPath: "id", autoIncrement: true });
       }
+      // This device's pairing identity (one row, id 1) and the friends it has
+      // paired with via QR — see identity.js. Still fully local/offline: no
+      // network call happens until the relay sync step ships.
+      if (!db.objectStoreNames.contains("identity")) {
+        db.createObjectStore("identity", { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains("friends")) {
+        db.createObjectStore("friends", { keyPath: "pubkey" });
+      }
+      // Outgoing messages waiting for a relay connection — see sync.js.
+      // Drained (and each row deleted) as soon as they're handed to the
+      // relay; this is a send buffer, not a message history.
+      if (!db.objectStoreNames.contains("outbox")) {
+        db.createObjectStore("outbox", { keyPath: "id", autoIncrement: true });
+      }
+      // Drops events — this device's own and every friend's, merged into one
+      // local cache. Leaderboards are computed by filtering/aggregating this
+      // store, never by asking anyone else for a number — see drops.js.
+      if (!db.objectStoreNames.contains("leaderboardEvents")) {
+        const s = db.createObjectStore("leaderboardEvents", { keyPath: "id" });
+        s.createIndex("authorPubkey", "authorPubkey", { unique: false });
+      }
+      // Named subsets of your friend list — see groups.js. Bounded groups
+      // never affect each other; snowball groups union their rosters with
+      // any other snowball group a member also belongs to.
+      if (!db.objectStoreNames.contains("groups")) {
+        db.createObjectStore("groups", { keyPath: "id" });
+      }
+      // Red Flag Court — see moderation.js. Flag state is never declared by
+      // a central authority, it's derived locally from these caches, same
+      // pattern as leaderboardEvents.
+      if (!db.objectStoreNames.contains("reports")) {
+        db.createObjectStore("reports", { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains("courtVideos")) {
+        db.createObjectStore("courtVideos", { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains("courtVotes")) {
+        db.createObjectStore("courtVotes", { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains("flagHistory")) {
+        db.createObjectStore("flagHistory", { keyPath: "id", autoIncrement: true });
+      }
     };
     req.onsuccess = (e) => resolve(e.target.result);
     req.onerror = (e) => reject(e.target.error);
@@ -40,6 +90,8 @@ function reqToPromise(req) { return new Promise((res, rej) => { req.onsuccess = 
 async function dbAdd(s, v) { return reqToPromise((await tx(s, "readwrite")).add(v)); }
 async function dbPut(s, v) { return reqToPromise((await tx(s, "readwrite")).put(v)); }
 async function dbDelete(s, k) { return reqToPromise((await tx(s, "readwrite")).delete(k)); }
+async function dbClear(s) { return reqToPromise((await tx(s, "readwrite")).clear()); }
+async function dbGet(s, k) { return reqToPromise((await tx(s, "readonly")).get(k)); }
 async function dbGetAll(s) { return reqToPromise((await tx(s, "readonly")).getAll()); }
 async function dbCount(s) { return reqToPromise((await tx(s, "readonly")).count()); }
 
@@ -52,19 +104,35 @@ async function enforceLogRetention(exerciseId) {
   for (const log of mine.slice(0, mine.length - MAX_LOGS_PER_EXERCISE)) await dbDelete("workoutLogs", log.id);
 }
 
-// Seeds on first run; also backfills `modality` for databases created before
-// cardio support existed.
+// Stable, cross-device exercise identity. IndexedDB's autoincrement `id` is
+// only a local foreign key (exercises are freely user-editable per device),
+// so anything meant to be compared between two people's devices — like a
+// leaderboard — has to reference this slug instead.
+function slugify(name) {
+  return String(name).trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+const DEFAULT_ROM_METERS = 0.4;
+
+// Seeds on first run; also backfills fields added after initial release
+// (modality, canonicalId, romMeters) for databases created before they existed.
 async function seedExercisesIfEmpty() {
   if ((await dbCount("exercises")) === 0) {
     const store = await tx("exercises", "readwrite");
-    for (const ex of SEED_EXERCISES) store.add({ ...ex, custom: false });
+    for (const ex of SEED_EXERCISES) store.add({ ...ex, custom: false, canonicalId: slugify(ex.name) });
     return;
   }
+  const seedByName = new Map(SEED_EXERCISES.map((ex) => [ex.name, ex]));
   const all = await dbGetAll("exercises");
-  const needsFix = all.filter((e) => !e.modality);
-  for (const e of needsFix) {
-    e.modality = e.category === "Cardio" ? "cardio" : "strength";
-    await dbPut("exercises", e);
+  for (const e of all) {
+    let changed = false;
+    if (!e.modality) { e.modality = e.category === "Cardio" ? "cardio" : "strength"; changed = true; }
+    if (!e.canonicalId) { e.canonicalId = slugify(e.name); changed = true; }
+    if (e.romMeters === undefined) {
+      const seed = seedByName.get(e.name);
+      e.romMeters = seed ? seed.romMeters : (e.modality === "cardio" ? null : DEFAULT_ROM_METERS);
+      changed = true;
+    }
+    if (changed) await dbPut("exercises", e);
   }
 }
 
@@ -148,7 +216,7 @@ document.querySelectorAll(".modal-overlay").forEach((o) =>
 // ============================= navigation =============================
 // No footer: Home is the root, the header trophy jumps to achievements and the
 // grid icon opens the Library hub. Sub-pages show a back arrow in the header.
-const SUB_PAGES = ["tab-plans", "tab-exercises", "tab-weight", "tab-achievements"];
+const SUB_PAGES = ["tab-plans", "tab-exercises", "tab-weight", "tab-achievements", "tab-friends", "tab-groups", "tab-leaderboards"];
 let navStack = [];
 
 function switchTab(tabId, push = true) {
@@ -169,6 +237,9 @@ function switchTab(tabId, push = true) {
   if (tabId === "tab-exercises") renderExercisesTab();
   if (tabId === "tab-plans") renderPlansTab();
   if (tabId === "tab-achievements") renderAchievementsTab();
+  if (tabId === "tab-friends") renderFriendsTab();
+  if (tabId === "tab-groups") renderGroupsTab();
+  if (tabId === "tab-leaderboards") renderLeaderboardsTab();
 }
 function goBack() {
   const prev = navStack.pop() || "tab-home";
@@ -457,6 +528,7 @@ async function renderHome() {
 
   renderTrendCard(stats.weightLogs);
   renderCalendar();
+  renderResumeCard();
 }
 
 function openPlanPicker() {
@@ -549,6 +621,12 @@ async function renderLibrary() {
   document.getElementById("lib-ex-meta").textContent = `${s.exercises.length} exercises`;
   document.getElementById("lib-weight-meta").textContent = s.totalWeightLogs ? `${s.totalWeightLogs} weigh-ins` : "No data yet";
   document.getElementById("lib-ach-meta").textContent = `${s.unlockedCount} / ${ACHIEVEMENTS.length} unlocked`;
+  const friendCount = await dbCount("friends");
+  document.getElementById("lib-friends-meta").textContent = friendCount ? `${friendCount} paired` : "No friends yet";
+  const eventCount = await dbCount("leaderboardEvents");
+  document.getElementById("lib-lb-meta").textContent = eventCount ? "Ranked" : "Log a workout to join";
+  const groupCount = await dbCount("groups");
+  document.getElementById("lib-groups-meta").textContent = groupCount ? `${groupCount} joined` : "No groups yet";
 }
 
 // =========================================================
@@ -852,7 +930,8 @@ async function persistSessionExercise(exerciseId, exerciseName) {
     planName: session.plan.name, splitName: session.split.name,
   };
   if (existing) { payload.id = existing.id; await dbPut("workoutLogs", payload); }
-  else { await dbAdd("workoutLogs", payload); await enforceLogRetention(exerciseId); }
+  else { payload.id = await dbAdd("workoutLogs", payload); await enforceLogRetention(exerciseId); }
+  recordLeaderboardEventForLog(payload);
 }
 
 function goToStep(idx, dir) {
@@ -1083,10 +1162,11 @@ document.getElementById("save-sets").addEventListener("click", async () => {
   const payload = { date, exerciseId: currentLogExercise.id, exerciseName: currentLogExercise.name, sets };
   if (editId) { payload.id = parseInt(editId, 10); await dbPut("workoutLogs", payload); }
   else {
-    await dbAdd("workoutLogs", payload);
+    payload.id = await dbAdd("workoutLogs", payload);
     await enforceLogRetention(currentLogExercise.id);
     if (!cardio) sets.forEach((s) => recordPRIfNew(currentLogExercise.id, s.weight));
   }
+  recordLeaderboardEventForLog(payload);
   closeModal("modal-log-sets");
   showToast("Saved");
   await checkAchievements();
@@ -1430,6 +1510,8 @@ document.getElementById("save-custom-exercise").addEventListener("click", async 
     category: document.getElementById("custom-ex-category").value.trim() || (newExModality === "cardio" ? "Cardio" : "Other"),
     equipment: document.getElementById("custom-ex-equipment").value.trim() || "None",
     modality: newExModality,
+    canonicalId: slugify(name),
+    romMeters: newExModality === "cardio" ? null : DEFAULT_ROM_METERS,
     custom: true,
   });
   closeModal("modal-custom-exercise");
@@ -1457,6 +1539,7 @@ async function openExerciseHistory(exercise) {
   modBtn.textContent = isCardio(exercise) ? "Switch to Strength (reps & kg)" : "Switch to Cardio (time & km)";
   modBtn.addEventListener("click", async () => {
     exercise.modality = isCardio(exercise) ? "strength" : "cardio";
+    exercise.romMeters = exercise.modality === "cardio" ? null : (exercise.romMeters ?? DEFAULT_ROM_METERS);
     await dbPut("exercises", exercise);
     closeModal("modal-exercise-history");
     showToast(`Now a ${exercise.modality} exercise`);
@@ -1483,11 +1566,41 @@ async function openExerciseHistory(exercise) {
   openModal("modal-exercise-history");
 }
 
+// ============================= Red Flag Court lockout =============================
+
+document.getElementById("btn-lockout-delete").addEventListener("click", () => {
+  document.getElementById("btn-lockout-delete").classList.add("hidden");
+  document.getElementById("btn-lockout-delete-confirm").classList.remove("hidden");
+});
+document.getElementById("btn-lockout-delete-confirm").addEventListener("click", () => { deleteAllMyData(); });
+
+function showLockoutScreen() {
+  document.querySelector("header.topbar").classList.add("hidden");
+  document.getElementById("app").classList.add("hidden");
+  document.getElementById("lockout-screen").classList.remove("hidden");
+}
+
 // ============================= boot =============================
+
 (async function init() {
   mountMascots();
   await openDB();
   await seedExercisesIfEmpty();
+  await getOrCreateIdentity();
+
+  try {
+    if (await completeDriveAuthIfRedirected()) {
+      showToast("Connected to Google Drive");
+      if (typeof renderBackupCard === "function") renderBackupCard();
+    }
+  } catch (err) {
+    showToast(err.message || "Google sign-in failed");
+  }
+
+  const lockedOut = await checkEscalationAndLockout();
+  if (lockedOut) { showLockoutScreen(); return; }
+  await applyModerationConsequences();
+
   await renderHome();
   await checkAchievements();
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
