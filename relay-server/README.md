@@ -59,23 +59,26 @@ compose pull && docker compose up -d`.
    configured with ECR push permissions):
 
    ```
-   AWS_REGION=us-east-1 ./scripts/build-and-push.sh
+   ECR_REPO=<account-id>.dkr.ecr.<region>.amazonaws.com/<your-repo> ./scripts/build-and-push.sh
    ```
 
-   This creates the `fittrack-relay` and `fittrack-court-upload` ECR
-   repositories if they don't exist yet, builds both images
-   (`Dockerfile.relay`, `Dockerfile.court-upload` — separate slim images
-   since the relay only needs `ws` and the court-upload service only needs
-   the AWS SDK, not one image with both), and pushes them.
+   Both images land in that one ECR repo as two tags — `:relay` and
+   `:court-upload` — rather than two separate repos, since one repo can
+   hold both just fine. Creates the repo if it doesn't exist yet, builds
+   both images (`Dockerfile.relay`, `Dockerfile.court-upload` — separate
+   slim images since the relay only needs `ws` and the court-upload
+   service only needs the AWS SDK, not one image with both), and pushes
+   them.
 
 2. **On the instance**, install Docker and the compose plugin (Amazon
    Linux 2023: `sudo dnf install -y docker docker-compose-plugin && sudo
    systemctl enable --now docker && sudo usermod -aG docker $USER` — log
    out/in for the group change to apply), then copy `docker-compose.yml`
-   and `.env.example` (as `.env`, filled in) to the instance and run:
+   and `.env.example` (as `.env`, filled in with the same `ECR_REPO`) to
+   the instance and run:
 
    ```
-   aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+   aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin <account-id>.dkr.ecr.<region>.amazonaws.com
    docker compose pull
    docker compose up -d
    ```
