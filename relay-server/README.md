@@ -22,7 +22,10 @@ deployment at all.
 ## Deploying to your AWS box
 
 The server has no database and no external dependencies beyond `ws`, so it
-runs anywhere Node does. A minimal path:
+runs anywhere Node does. Two ways to run it on the instance — plain Node
+under systemd, or as a container pulled from ECR. Pick one.
+
+### Option A: plain Node + systemd
 
 1. Copy this folder to the instance, `npm install --production`.
 2. Run it under a process manager so it survives reboots/crashes, e.g.
@@ -45,6 +48,59 @@ runs anywhere Node does. A minimal path:
    ```
 
    `sudo systemctl enable --now fittrack-relay`.
+
+### Option B: Docker + ECR
+
+Build once on your own machine, push to ECR, pull on the instance — no
+Node toolchain needed on the box itself, and updates are just `docker
+compose pull && docker compose up -d`.
+
+1. **Build and push** from your own machine (needs Docker + AWS CLI
+   configured with ECR push permissions):
+
+   ```
+   AWS_REGION=us-east-1 ./scripts/build-and-push.sh
+   ```
+
+   This creates the `fittrack-relay` and `fittrack-court-upload` ECR
+   repositories if they don't exist yet, builds both images
+   (`Dockerfile.relay`, `Dockerfile.court-upload` — separate slim images
+   since the relay only needs `ws` and the court-upload service only needs
+   the AWS SDK, not one image with both), and pushes them.
+
+2. **On the instance**, install Docker and the compose plugin (Amazon
+   Linux 2023: `sudo dnf install -y docker docker-compose-plugin && sudo
+   systemctl enable --now docker && sudo usermod -aG docker $USER` — log
+   out/in for the group change to apply), then copy `docker-compose.yml`
+   and `.env.example` (as `.env`, filled in) to the instance and run:
+
+   ```
+   aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+   docker compose pull
+   docker compose up -d
+   ```
+
+   The instance needs an IAM role attached (see step 2 of the S3 setup
+   below) with ECR pull permissions (`AmazonEC2ContainerRegistryReadOnly`
+   is fine) in addition to the S3 permissions, if you're running the
+   court-upload container too.
+
+   **IMDS hop-limit gotcha**: `court-upload-server.js` gets its AWS
+   credentials from the instance's IAM role via the metadata service
+   (no keys in the container, on purpose). If the instance enforces
+   IMDSv2 (the default on new instances), its metadata hop limit defaults
+   to 1 — one hop too few once the request is going through Docker's
+   bridge network — so the SDK inside the container will fail to find
+   credentials until you raise it:
+
+   ```
+   aws ec2 modify-instance-metadata-options --instance-id <id> --http-put-response-hop-limit 2 --region us-east-1
+   ```
+
+   If you're not running the court-upload container, this doesn't apply —
+   the relay itself never touches AWS credentials.
+
+Either way (Option A or B), continue with:
 
 3. **TLS**: browsers require `wss://` (not `ws://`) from an HTTPS page, and
    this PWA will be served over HTTPS. Put a reverse proxy in front that
@@ -112,7 +168,10 @@ comment for the two endpoints.
    systemd + reverse-proxy pattern as the relay works here too — it's a
    second independent process/port, so give it its own systemd unit
    (`ExecStart=/usr/bin/node /opt/fittrack-relay/court-upload-server.js`)
-   and its own reverse-proxy block if you want it on `https://`.
+   and its own reverse-proxy block if you want it on `https://`. Deploying
+   via Docker instead? See "Option B: Docker + ECR" above — the
+   `fittrack-court-upload` image runs this same file, and `docker-compose.yml`
+   already wires up `COURT_BUCKET`/`AWS_REGION`.
 
 4. Point the app at it from **Friends → Sync → Court video upload
    endpoint**, e.g. `https://court.yourdomain.com`.

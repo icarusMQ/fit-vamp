@@ -1,0 +1,14 @@
+# Court video upload service (court-upload-server.js) — only needs the AWS
+# SDK packages, not `ws` (that's the relay's dependency), so it gets its own
+# slim image instead of sharing one built from the full package.json.
+FROM node:20-alpine
+WORKDIR /app
+RUN npm install --omit=dev \
+      @aws-sdk/client-s3@^3.700.0 \
+      @aws-sdk/s3-request-presigner@^3.700.0 \
+      --no-save
+COPY court-upload-server.js ./
+ENV NODE_ENV=production
+EXPOSE 8788
+USER node
+CMD ["node", "court-upload-server.js"]

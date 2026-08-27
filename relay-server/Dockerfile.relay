@@ -1,0 +1,11 @@
+# WebSocket relay (server.js) — only needs `ws`, not the AWS SDK that
+# court-upload-server.js requires, so it gets its own slim image instead of
+# sharing one built from the full package.json.
+FROM node:20-alpine
+WORKDIR /app
+RUN npm install --omit=dev ws@^8.18.0 --no-save
+COPY server.js ./
+ENV NODE_ENV=production
+EXPOSE 8787
+USER node
+CMD ["node", "server.js"]
