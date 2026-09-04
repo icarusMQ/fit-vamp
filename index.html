@@ -18,6 +18,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="styles.css" />
+<script>
+  // Applies the saved theme before first paint to avoid a flash of the
+  // default palette. Kept inline (not a <script src>) so it runs before
+  // the browser has anything to paint; theme.js (loaded later, at the end
+  // of body) re-validates this against the real THEMES registry.
+  try {
+    var ftTheme = localStorage.getItem("ft_theme");
+    if (ftTheme) document.documentElement.setAttribute("data-theme", ftTheme);
+  } catch (e) {}
+</script>
 </head>
 <body>
 
@@ -275,6 +285,15 @@
       <button class="btn btn-ghost btn-sm" id="btn-edit-username">Edit</button>
     </div>
     <button class="btn btn-ghost btn-full btn-sm" id="btn-replay-onboarding">Replay walkthrough</button>
+
+    <h3 class="list-heading">Personalize</h3>
+    <div class="card">
+      <label class="field-label">Mascot</label>
+      <div id="mascot-picker" class="picker-row"></div>
+
+      <label class="field-label">Theme</label>
+      <div id="theme-picker" class="picker-row"></div>
+    </div>
 
     <h3 class="list-heading">Sync</h3>
     <div class="card">
@@ -835,6 +854,7 @@
 <script src="exercises-data.js"></script>
 <script src="achievements-data.js"></script>
 <script src="sounds.js"></script>
+<script src="theme.js"></script>
 <script src="mascot.js"></script>
 <script src="dialogue.js"></script>
 <script src="vendor/qrcode.min.js"></script>

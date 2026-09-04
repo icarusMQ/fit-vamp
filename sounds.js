@@ -25,11 +25,35 @@ function sfxSetMuted(m) {
   localStorage.setItem(SFX_LS_KEY, JSON.stringify(_muted));
 }
 
-// Core voice: one oscillator note with a quick envelope.
-function _note(ctx, { freq = 440, type = "square", t = 0, dur = 0.08, vol = 0.06, slideTo = null }) {
+// Per-mascot "voice" — same SFX definitions below, just retuned in pitch and
+// (optionally) waveform depending on the selected mascot, so the app sounds
+// different per character without every SFX needing its own variant. Vesper
+// is pitch 1 / no type override so existing users hear no change by default.
+const SOUND_PROFILES = {
+  vesper: { pitch: 1, type: null },
+  grimble: { pitch: 0.8, type: "square" },
+  wisp: { pitch: 1.18, type: "sine" },
+  blaze: { pitch: 0.85, type: "triangle" },
+  mochi: { pitch: 1.3, type: "square" },
+};
+function _soundProfile() {
+  const id = typeof getMascotId === "function" ? getMascotId() : "vesper";
+  return SOUND_PROFILES[id] || SOUND_PROFILES.vesper;
+}
+
+// Core voice: one oscillator note with a quick envelope. `type` left
+// unspecified by the caller falls back to the mascot's profile waveform,
+// then to "square" — but a call site that deliberately asks for a specific
+// waveform (e.g. SFX.error()'s "sawtooth") always keeps it, so the mascot
+// voice retunes pitch/timbre without erasing sounds that must stay distinct.
+function _note(ctx, { freq = 440, type, t = 0, dur = 0.08, vol = 0.06, slideTo = null }) {
+  const profile = _soundProfile();
+  freq *= profile.pitch;
+  if (slideTo) slideTo *= profile.pitch;
+  const resolvedType = type || profile.type || "square";
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
-  osc.type = type;
+  osc.type = resolvedType;
   const start = ctx.currentTime + t;
   osc.frequency.setValueAtTime(freq, start);
   if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, start + dur);
