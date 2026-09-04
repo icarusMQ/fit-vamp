@@ -41,15 +41,19 @@ function _soundProfile() {
   return SOUND_PROFILES[id] || SOUND_PROFILES.vesper;
 }
 
-// Core voice: one oscillator note with a quick envelope.
-function _note(ctx, { freq = 440, type = "square", t = 0, dur = 0.08, vol = 0.06, slideTo = null }) {
+// Core voice: one oscillator note with a quick envelope. `type` left
+// unspecified by the caller falls back to the mascot's profile waveform,
+// then to "square" — but a call site that deliberately asks for a specific
+// waveform (e.g. SFX.error()'s "sawtooth") always keeps it, so the mascot
+// voice retunes pitch/timbre without erasing sounds that must stay distinct.
+function _note(ctx, { freq = 440, type, t = 0, dur = 0.08, vol = 0.06, slideTo = null }) {
   const profile = _soundProfile();
   freq *= profile.pitch;
   if (slideTo) slideTo *= profile.pitch;
-  if (profile.type) type = profile.type;
+  const resolvedType = type || profile.type || "square";
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
-  osc.type = type;
+  osc.type = resolvedType;
   const start = ctx.currentTime + t;
   osc.frequency.setValueAtTime(freq, start);
   if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, start + dur);

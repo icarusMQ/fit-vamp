@@ -12,6 +12,11 @@
   --gold: #f2c14e;
   --purple: #7c3aed;
   --danger: #ff2d4d;
+  /* Brightest stop of the .bg-layer/.session-screen ambient gradient — its
+     own token (not --surface-2) so the gothic default reproduces the exact
+     original hardcoded hue (#2a1140) instead of drifting to a nearby but
+     different palette color. */
+  --bg-glow: #2a1140;
   --radius: 6px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -27,16 +32,19 @@
   --bg: #0a0612; --bg2: #150c22; --surface: #1a1027; --surface-2: #241634;
   --border: #38204e; --border-soft: #2a1a3c; --text: #f0e6f5; --text-dim: #9b86ad;
   --blood: #c81e3a; --blood-bright: #ff2d4d; --gold: #f2c14e; --purple: #7c3aed; --danger: #ff2d4d;
+  --bg-glow: #2a1140;
 }
 [data-theme="parchment"] {
   --bg: #efe6d8; --bg2: #e4d8c4; --surface: #fbf6ec; --surface-2: #f1e9da;
   --border: #c9b48f; --border-soft: #ddccab; --text: #2b1f14; --text-dim: #6b5a44;
   --blood: #9c1730; --blood-bright: #c81e3a; --gold: #96690b; --purple: #6d28d9; --danger: #c81e3a;
+  --bg-glow: #f1e9da;
 }
 [data-theme="terminal"] {
   --bg: #04120a; --bg2: #071c10; --surface: #0a2614; --surface-2: #0f331a;
   --border: #1f7a3d; --border-soft: #144d27; --text: #6dffa0; --text-dim: #3a9a63;
   --blood: #ff5050; --blood-bright: #ff8080; --gold: #f5d76e; --purple: #55e6c1; --danger: #ff5050;
+  --bg-glow: #0f331a;
 }
 
 * { box-sizing: border-box; }
@@ -70,7 +78,7 @@ body { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); positio
   /* Theme-driven (not hardcoded) so switching themes recolors this fixed
      backdrop too, not just elements with an explicit --surface/--bg background. */
   background:
-    radial-gradient(120% 80% at 50% -10%, var(--surface-2) 0%, var(--bg2) 45%, var(--bg) 100%),
+    radial-gradient(120% 80% at 50% -10%, var(--bg-glow) 0%, var(--bg2) 45%, var(--bg) 100%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
 }
 .scanlines {
@@ -418,7 +426,7 @@ body { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); positio
 .session-screen {
   position: fixed; inset: 0; z-index: 150;
   background:
-    radial-gradient(120% 70% at 50% 0%, var(--surface-2) 0%, var(--bg2) 45%, var(--bg) 100%);
+    radial-gradient(120% 70% at 50% 0%, var(--bg-glow) 0%, var(--bg2) 45%, var(--bg) 100%);
   display: flex; flex-direction: column;
   padding-top: var(--safe-top); padding-bottom: var(--safe-bottom);
   overflow-y: auto;
