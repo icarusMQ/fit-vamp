@@ -23,9 +23,9 @@ static, installable web app so it can run entirely on an iPhone via
 - **Bodyweight sets** — log reps at bodyweight, optionally plus added weight.
 - **Weight tracking** — quick log, trend chart, lifetime stats.
 - **Calendar** — see which days you trained or weighed in.
-- **Gamification** — streaks, XP/levels, 100+ achievements, a mascot with
-  contextual reactions, and synthesized sound effects (Web Audio, no audio
-  files).
+- **Gamification** — streaks, XP/levels, 100+ achievements, a selectable
+  mascot with contextual reactions, selectable color themes, and synthesized
+  sound effects (Web Audio, no audio files).
 - **Offline-first PWA** — a service worker caches the whole app after first
   load; a 10-log-per-exercise retention limit keeps local storage small.
 
@@ -35,7 +35,7 @@ Vanilla HTML/CSS/JS, no build step, no dependencies. Data lives in:
 
 - `IndexedDB` — exercises, workout logs, weight logs, plans
 - `localStorage` — achievements unlocked, personal records, streak/XP inputs,
-  UI preferences (mute, last-used plan)
+  UI preferences (mute, last-used plan, selected mascot, selected color theme)
 
 ## Running it locally
 
@@ -80,8 +80,9 @@ styles.css             All styling (dark gothic/pixel theme, animations)
 app.js                 App logic: IndexedDB, sessions, stats, achievements
 exercises-data.js      Seed exercise list (curated, CC BY-SA 3.0 inspired by wger)
 achievements-data.js   Achievement definitions
-mascot.js               Mascot SVG + mood/animation helpers
+mascot.js               Mascot SVG registry + mood/animation helpers
 dialogue.js             Mascot dialogue lines
+theme.js                 Color palette presets + selection
 sounds.js               Web Audio sound effects
 manifest.json           PWA manifest
 sw.js                   Service worker (offline caching)

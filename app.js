@@ -1584,8 +1584,46 @@ function showLockoutScreen() {
 
 // ============================= boot =============================
 
+// ============================= Personalize (mascot + theme pickers) =============================
+function renderPersonalizePickers() {
+  const mascotRow = document.getElementById("mascot-picker");
+  mascotRow.innerHTML = "";
+  const activeMascot = getMascotId();
+  Object.entries(MASCOTS).forEach(([id, mascot]) => {
+    const btn = document.createElement("button");
+    btn.className = "mascot-option" + (id === activeMascot ? " is-active" : "");
+    btn.innerHTML = `<span class="mascot-option-thumb">${mascot.svg}</span><span class="mascot-option-name">${escapeHtml(mascot.name)}</span>`;
+    btn.addEventListener("click", () => {
+      if (id === getMascotId()) return;
+      SFX.tap();
+      setMascotId(id);
+      renderPersonalizePickers();
+      refreshCurrentTab();
+    });
+    mascotRow.appendChild(btn);
+  });
+
+  const themeRow = document.getElementById("theme-picker");
+  themeRow.innerHTML = "";
+  const activeTheme = getThemeId();
+  Object.entries(THEMES).forEach(([id, theme]) => {
+    const btn = document.createElement("button");
+    btn.className = "theme-option" + (id === activeTheme ? " is-active" : "");
+    const swatchDots = theme.swatch.map((c) => `<span style="background:${c}"></span>`).join("");
+    btn.innerHTML = `<span class="theme-swatch">${swatchDots}</span><span class="theme-option-name">${escapeHtml(theme.name)}</span>`;
+    btn.addEventListener("click", () => {
+      if (id === getThemeId()) return;
+      SFX.tap();
+      setThemeId(id);
+      renderPersonalizePickers();
+    });
+    themeRow.appendChild(btn);
+  });
+}
+
 (async function init() {
   mountMascots();
+  renderPersonalizePickers();
   await openDB();
   await seedExercisesIfEmpty();
   // Unconditional and early: this previously sat after the lockout check,

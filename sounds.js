@@ -25,8 +25,28 @@ function sfxSetMuted(m) {
   localStorage.setItem(SFX_LS_KEY, JSON.stringify(_muted));
 }
 
+// Per-mascot "voice" — same SFX definitions below, just retuned in pitch and
+// (optionally) waveform depending on the selected mascot, so the app sounds
+// different per character without every SFX needing its own variant. Vesper
+// is pitch 1 / no type override so existing users hear no change by default.
+const SOUND_PROFILES = {
+  vesper: { pitch: 1, type: null },
+  grimble: { pitch: 0.8, type: "square" },
+  wisp: { pitch: 1.18, type: "sine" },
+  blaze: { pitch: 0.85, type: "triangle" },
+  mochi: { pitch: 1.3, type: "square" },
+};
+function _soundProfile() {
+  const id = typeof getMascotId === "function" ? getMascotId() : "vesper";
+  return SOUND_PROFILES[id] || SOUND_PROFILES.vesper;
+}
+
 // Core voice: one oscillator note with a quick envelope.
 function _note(ctx, { freq = 440, type = "square", t = 0, dur = 0.08, vol = 0.06, slideTo = null }) {
+  const profile = _soundProfile();
+  freq *= profile.pitch;
+  if (slideTo) slideTo *= profile.pitch;
+  if (profile.type) type = profile.type;
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.type = type;

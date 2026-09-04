@@ -19,6 +19,26 @@
   --font-display: "VT323", monospace;
 }
 
+/* Color palette presets — the bare :root block above is "gothic", the
+   default for anyone who never picks a theme (see theme.js). Explicitly
+   restating it under [data-theme="gothic"] too keeps every preset equally
+   real instead of one being an implicit fallback and the others overrides. */
+[data-theme="gothic"] {
+  --bg: #0a0612; --bg2: #150c22; --surface: #1a1027; --surface-2: #241634;
+  --border: #38204e; --border-soft: #2a1a3c; --text: #f0e6f5; --text-dim: #9b86ad;
+  --blood: #c81e3a; --blood-bright: #ff2d4d; --gold: #f2c14e; --purple: #7c3aed; --danger: #ff2d4d;
+}
+[data-theme="parchment"] {
+  --bg: #efe6d8; --bg2: #e4d8c4; --surface: #fbf6ec; --surface-2: #f1e9da;
+  --border: #c9b48f; --border-soft: #ddccab; --text: #2b1f14; --text-dim: #6b5a44;
+  --blood: #9c1730; --blood-bright: #c81e3a; --gold: #96690b; --purple: #6d28d9; --danger: #c81e3a;
+}
+[data-theme="terminal"] {
+  --bg: #04120a; --bg2: #071c10; --surface: #0a2614; --surface-2: #0f331a;
+  --border: #1f7a3d; --border-soft: #144d27; --text: #6dffa0; --text-dim: #3a9a63;
+  --blood: #ff5050; --blood-bright: #ff8080; --gold: #f5d76e; --purple: #55e6c1; --danger: #ff5050;
+}
+
 * { box-sizing: border-box; }
 
 /* Single source of truth for the "hidden" toggle used throughout the app.
@@ -47,9 +67,11 @@ body { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); positio
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  /* Theme-driven (not hardcoded) so switching themes recolors this fixed
+     backdrop too, not just elements with an explicit --surface/--bg background. */
   background:
-    radial-gradient(120% 80% at 50% -10%, #2a1140 0%, #150b23 45%, #0a0612 100%),
-    linear-gradient(180deg, #0a0612 0%, #0a0612 100%);
+    radial-gradient(120% 80% at 50% -10%, var(--surface-2) 0%, var(--bg2) 45%, var(--bg) 100%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
 }
 .scanlines {
   position: fixed; inset: 0; pointer-events: none; z-index: 6;
@@ -146,6 +168,47 @@ body { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); positio
 @keyframes flap { 0%,100%{transform:rotate(0) scaleY(1)} 50%{transform:rotate(-4deg) scaleY(.9)} }
 .v-aura { animation: auraPulse 4s ease-in-out infinite; }
 @keyframes auraPulse { 0%,100%{opacity:.5} 50%{opacity:.9} }
+
+/* Per-mascot "vibe" — same idle bob / react-bounce / react-shake / react-pop
+   classes app.js already sets, just resolved to a different animation per
+   mascot via the .mascot-wrap.mascot-<id> class mountMascots() applies.
+   Vesper keeps the plain .mascot-wrap defaults above (her wings/aura already
+   carry her vibe), so she has no overrides here. */
+.mascot-wrap.mascot-grimble { animation: grimbleIdle 4s ease-in-out infinite; }
+@keyframes grimbleIdle { 0%,86%,100%{transform:translateY(0) rotate(0)} 90%{transform:translateY(-3px) rotate(-4deg)} 94%{transform:translateY(0) rotate(3deg)} 97%{transform:translateY(-1px) rotate(-1deg)} }
+.mascot-wrap.mascot-grimble.react-bounce { animation: grimbleReactBounce .8s cubic-bezier(.3,1.4,.5,1); }
+@keyframes grimbleReactBounce { 0%{transform:translateY(0) rotate(0) scale(1)} 25%{transform:translateY(-14px) rotate(-8deg) scale(1.1)} 50%{transform:translateY(0) rotate(6deg) scale(.92)} 75%{transform:translateY(-8px) rotate(-4deg) scale(1.05)} 100%{transform:translateY(0) rotate(0) scale(1)} }
+.mascot-wrap.mascot-grimble.react-shake { animation: grimbleReactShake .5s ease; }
+@keyframes grimbleReactShake { 0%,100%{transform:translateX(0) rotate(0)} 15%{transform:translateX(-8px) rotate(-8deg)} 30%{transform:translateX(8px) rotate(8deg)} 45%{transform:translateX(-7px) rotate(-6deg)} 60%{transform:translateX(6px) rotate(5deg)} 80%{transform:translateX(-3px) rotate(-2deg)} }
+.mascot-wrap.mascot-grimble.react-pop { animation: grimbleReactPop .6s cubic-bezier(.2,1.5,.4,1); }
+@keyframes grimbleReactPop { 0%{transform:scale(1,1)} 30%{transform:scale(.82,1.22)} 55%{transform:scale(1.24,.82)} 100%{transform:scale(1,1)} }
+
+.mascot-wrap.mascot-wisp { animation: wispIdle 4.5s ease-in-out infinite; }
+@keyframes wispIdle { 0%,100%{transform:translate(0,0)} 33%{transform:translate(3px,-9px)} 66%{transform:translate(-3px,-4px)} }
+.mascot-wrap.mascot-wisp.react-bounce { animation: wispReactDrift .9s ease-in-out; }
+@keyframes wispReactDrift { 0%{transform:translateY(0) scale(1);opacity:1} 45%{transform:translateY(-18px) scale(1.05);opacity:.7} 100%{transform:translateY(0) scale(1);opacity:1} }
+.mascot-wrap.mascot-wisp.react-shake { animation: wispReactWobble .6s ease; }
+@keyframes wispReactWobble { 0%,100%{transform:translateX(0) skewX(0)} 25%{transform:translateX(-5px) skewX(-6deg)} 50%{transform:translateX(5px) skewX(6deg)} 75%{transform:translateX(-3px) skewX(-3deg)} }
+.mascot-wrap.mascot-wisp.react-pop { animation: wispReactPulse .7s ease-in-out; }
+@keyframes wispReactPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.15);opacity:.6} }
+
+.mascot-wrap.mascot-blaze { animation: blazeIdle 5s ease-in-out infinite; }
+@keyframes blazeIdle { 0%,100%{transform:rotate(0)} 50%{transform:rotate(-2deg)} }
+.mascot-wrap.mascot-blaze.react-bounce { animation: blazeReactNod .7s ease-out; }
+@keyframes blazeReactNod { 0%{transform:translateY(0) rotate(0)} 35%{transform:translateY(-5px) rotate(-3deg)} 70%{transform:translateY(1px) rotate(1deg)} 100%{transform:translateY(0) rotate(0)} }
+.mascot-wrap.mascot-blaze.react-shake { animation: blazeReactShake .45s ease; }
+@keyframes blazeReactShake { 0%,100%{transform:translateX(0)} 30%{transform:translateX(-3px)} 60%{transform:translateX(3px)} 85%{transform:translateX(-1px)} }
+.mascot-wrap.mascot-blaze.react-pop { animation: blazeReactPop .6s ease-out; }
+@keyframes blazeReactPop { 0%{transform:scale(1) rotate(0)} 45%{transform:scale(1.08) rotate(3deg)} 100%{transform:scale(1) rotate(0)} }
+
+.mascot-wrap.mascot-mochi { animation: mochiIdle 1.8s ease-in-out infinite; }
+@keyframes mochiIdle { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-6px) scale(1.02)} }
+.mascot-wrap.mascot-mochi.react-bounce { animation: mochiReactBounce .9s cubic-bezier(.3,1.6,.4,1); }
+@keyframes mochiReactBounce { 0%{transform:translateY(0) scale(1)} 22%{transform:translateY(-18px) scale(1.12)} 44%{transform:translateY(0) scale(.9)} 62%{transform:translateY(-10px) scale(1.06)} 80%{transform:translateY(0) scale(.97)} 100%{transform:translateY(0) scale(1)} }
+.mascot-wrap.mascot-mochi.react-shake { animation: mochiReactWiggle .5s ease-in-out; }
+@keyframes mochiReactWiggle { 0%,100%{transform:rotate(0)} 25%{transform:rotate(8deg)} 50%{transform:rotate(-8deg)} 75%{transform:rotate(4deg)} }
+.mascot-wrap.mascot-mochi.react-pop { animation: mochiReactPop .6s cubic-bezier(.2,1.6,.4,1); }
+@keyframes mochiReactPop { 0%{transform:scale(1) rotate(0)} 40%{transform:scale(1.24) rotate(-6deg)} 100%{transform:scale(1) rotate(0)} }
 
 /* mood visibility */
 .mascot-svg .face-part { display: none; }
@@ -286,6 +349,18 @@ body { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); positio
 }
 .chip-active { background: var(--blood); color: #fff0f2; border-color: #8a1327; font-weight: 600; }
 
+.picker-row { display: flex; gap: 10px; overflow-x: auto; padding: 4px 0 12px; }
+.mascot-option, .theme-option {
+  flex: 0 0 auto; width: 64px; background: var(--surface-2); border: 2px solid var(--border);
+  border-radius: var(--radius); padding: 6px; cursor: pointer;
+}
+.mascot-option.is-active, .theme-option.is-active { border-color: var(--blood); box-shadow: 0 0 0 2px var(--blood-bright) inset; }
+.mascot-option-thumb { width: 100%; aspect-ratio: 128 / 148; }
+.mascot-option-thumb svg { width: 100%; height: 100%; overflow: visible; display: block; }
+.theme-swatch { display: flex; height: 28px; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-soft); }
+.theme-swatch span { flex: 1; }
+.mascot-option-name, .theme-option-name { display: block; font-size: 10px; text-align: center; color: var(--text-dim); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 .set-row { display: grid; grid-template-columns: 1fr 1fr 32px; gap: 8px; align-items: center; }
 .set-row .text-input { margin-bottom: 8px; }
 .set-remove { background: none; border: none; color: var(--text-dim); font-size: 16px; cursor: pointer; margin-bottom: 8px; }
@@ -343,7 +418,7 @@ body { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); positio
 .session-screen {
   position: fixed; inset: 0; z-index: 150;
   background:
-    radial-gradient(120% 70% at 50% 0%, #2a1140 0%, #150b23 45%, #0a0612 100%);
+    radial-gradient(120% 70% at 50% 0%, var(--surface-2) 0%, var(--bg2) 45%, var(--bg) 100%);
   display: flex; flex-direction: column;
   padding-top: var(--safe-top); padding-bottom: var(--safe-bottom);
   overflow-y: auto;
