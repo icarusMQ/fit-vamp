@@ -845,3 +845,23 @@ body { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); positio
 .lockout-card h2 { color: var(--danger); margin-bottom: 12px; }
 .lockout-card p { color: var(--text-dim); margin-bottom: 12px; }
 .lockout-card .btn { margin-top: 10px; }
+
+/* ============================= onboarding ============================= */
+.onboarding-screen {
+  position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: var(--bg, #0a0612);
+}
+.onboarding-card {
+  width: 100%; max-width: 420px; background: var(--surface); border: 2px solid var(--border);
+  border-radius: var(--radius); padding: 24px 20px;
+}
+.onboarding-dock { justify-content: center; margin-bottom: 18px; }
+.onboarding-preview { color: var(--text-dim); font-size: 13px; margin: 10px 0 0; text-align: center; }
+.onboarding-preview strong { color: var(--text); }
+.onboarding-caption { color: var(--text-dim); font-size: 13px; text-align: center; margin: 0 0 16px; }
+.onboarding-relay-choices { display: flex; flex-direction: column; gap: 8px; }
+.onboarding-relay-choices .btn { margin-top: 0; }
+#onboarding-relay-custom-row { margin-top: 12px; }
+.onboarding-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 16px; }
+.onboarding-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }
+.onboarding-dot-active { background: var(--blood-bright); }

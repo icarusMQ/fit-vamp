@@ -16,6 +16,11 @@ const RELAY_URL_KEY = "ft_relay_url";
 function getRelayUrl() { return localStorage.getItem(RELAY_URL_KEY) || ""; }
 function setRelayUrl(url) { localStorage.setItem(RELAY_URL_KEY, url.trim()); }
 
+// The project's own maintained relay — offered as the one-tap "standard"
+// option during onboarding (onboarding.js). Users can always point at their
+// own instead, here or in Friends → Sync.
+const DEFAULT_RELAY_URL = "wss://56.125.84.213.sslip.io";
+
 let socket = null;
 let manuallyClosed = true;
 let reconnectDelay = 1000;

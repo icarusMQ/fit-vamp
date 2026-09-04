@@ -89,6 +89,20 @@ const DIALOGUE = {
   ],
 };
 
+// ---------- onboarding (onboarding.js) ----------
+// Not part of DIALOGUE: these are shown in a fixed sequence, not picked
+// at random, and the name/relay steps are one-off greetings rather than a
+// pool. `caption` is the plain one-line summary shown under Vesper's line.
+const ONBOARDING_GREETING = { m: "idle", t: "Well, well — a new face. Tell me what to call you. I'll remember it forever." };
+const ONBOARDING_RELAY_PITCH = { m: "wink", t: "Now — should I keep watch for your friends too? A relay lets us sync leaderboards and pings between paired devices. Fully optional; I work just fine without one." };
+
+const ONBOARDING_TOUR = [
+  { m: "idle", t: "First, build me a plan. Splits, exercises, the whole ritual.", caption: "Plans — organize your training into splits" },
+  { m: "smug", t: "Then we train. I'll count every set, time every rest, and remember every record.", caption: "Guided sessions — set-by-set logging with rest timers" },
+  { m: "idle", t: "Weigh in whenever you like. I'm cataloguing the whole picture, not just the lifts.", caption: "Weight tracking — log and trend your bodyweight" },
+  { m: "love", t: "And since you let others in — friends, leaderboards, the lot. Don't keep me waiting to show you off.", caption: "Friends & leaderboards — sync and compete with paired devices", needsRelay: true },
+];
+
 function pickLine(key, vars = {}) {
   const pool = DIALOGUE[key];
   if (!pool || pool.length === 0) return { m: "idle", t: "..." };
